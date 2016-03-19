@@ -35,7 +35,7 @@ static void installStage2(u32 mode, int pos_y){
 }
 
 void installer(void){
-    drawString("Safe A9LH Installer v1.0", 10, 10, 0x0000FF);
+    drawString("Safe A9LH Installer v1.1", 10, 10, 0x0000FF);
     int pos_y = drawString("Thanks to delebile, #cakey and StandardBus", 10, 40, 0xFFFFFF);
     pos_y = drawString("Press SELECT for a full install", 10, pos_y + SPACING_VERT, 0xFFFFFF);
     pos_y = drawString("Press START to only update stage2", 10, pos_y, 0xFFFFFF);

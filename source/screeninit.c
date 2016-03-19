@@ -97,6 +97,9 @@ void initLCD(void){
         *((vu32 *)0x23FFFE04) = 0x18300000;
         *((vu32 *)0x23FFFE08) = 0x18346500;
 
+        //Clear ARM11 entry offset
+        *arm11 = 0;
+
         while(1);
     }
 
