@@ -1,0 +1,6 @@
+[submodule "CakeBrah"]
+	path = CakeBrah
+	url = https://github.com/mid-kid/CakeBrah
+[submodule "CakeHax"]
+	path = CakeHax
+	url = https://github.com/mid-kid/CakeHax
