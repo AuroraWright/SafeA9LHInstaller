@@ -295,8 +295,11 @@ void readFirm0(u8 *outbuf, u32 size){
     u8 CTRtmp[sizeof(CTR)];
     memcpy(CTRtmp, CTR, sizeof(CTR));
 
-    aes_advctr(CTRtmp, 0x0B130000 / 0x10, AES_INPUT_BE | AES_INPUT_NORMAL);
+    //Read FIRM0 data
     sdmmc_nand_readsectors(0x0B130000 / 0x200, size / 0x200, outbuf);
+
+    //Decrypt
+    aes_advctr(CTRtmp, 0x0B130000 / 0x10, AES_INPUT_BE | AES_INPUT_NORMAL);
     aes_use_keyslot(0x06);
     aes(outbuf, outbuf, size / AES_BLOCK_SIZE, CTRtmp, AES_CTR_MODE, AES_INPUT_BE | AES_INPUT_NORMAL);
 }
@@ -307,21 +310,27 @@ void writeFirm(u8 *inbuf, u32 firm, u32 size){
     u8 CTRtmp[sizeof(CTR)];
     memcpy(CTRtmp, CTR, sizeof(CTR));
 
+    //Encrypt FIRM data
     aes_advctr(CTRtmp, offset / 0x10, AES_INPUT_BE | AES_INPUT_NORMAL);
     aes_use_keyslot(0x06);
     aes(inbuf, inbuf, size / AES_BLOCK_SIZE, CTRtmp, AES_CTR_MODE, AES_INPUT_BE | AES_INPUT_NORMAL);
 
+    //Write to NAND
     sdmmc_nand_writesectors(offset / 0x200, size / 0x200, inbuf);
 }
 
 //Setup keyslot 0x11 for key sector de/encryption
-void setupKeyslot0x11(const u8 *otp){
+void setupKeyslot0x11(u32 a9lhBoot, const u8 *otp){
     u8 shasum[0x20];
     u8 keyX[0x10];
     u8 keyY[0x10];
 
+    //If booting via A9LH, use the leftover contents of the SHA register
+    if(a9lhBoot) memcpy((void *)shasum, (void *)REG_SHA_HASH, 0x20);
+    //Else calculate the otp.bin hash
+    else sha(shasum, otp, 0x90, SHA_256_MODE);
+
     //Set keyX and keyY
-    sha(shasum, otp, 0x90, SHA_256_MODE);
     memcpy(keyX, shasum, 0x10);
     memcpy(keyY, shasum + 0x10, 0x10);
     aes_setkey(0x11, keyX, AES_KEYX, AES_INPUT_BE | AES_INPUT_NORMAL);
@@ -340,7 +349,7 @@ void generateSector(u8 *keySector){
 }
 
 //Test the OTP to be correct by verifying key2
-u32 testOtp(u32 mode){
+u32 testOtp(u32 a9lhBoot){
     //Read keysector from NAND
     sdmmc_nand_readsectors(0x96, 0x1, (vu8 *)0x24500000);
 
@@ -349,7 +358,7 @@ u32 testOtp(u32 mode){
     aes((void *)0x24500000 + 0x10, (void *)0x24500000 + 0x10, 1, NULL, AES_ECB_DECRYPT_MODE, 0);
 
     //Test key2
-    if(memcmp((void *)0x24500000 + 0x10, mode ? key2 : a9lhKey2, 0x10) != 0) return 0;
+    if(memcmp((void *)0x24500000 + 0x10, a9lhBoot ? a9lhKey2 : key2, 0x10) != 0) return 0;
     return 1;
 }
 

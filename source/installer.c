@@ -26,7 +26,7 @@ static void installStage2(u32 mode, int pos_y){
     char *path = "a9lh/payload_stage2.bin";
     u32 size = fileSize(path);
     if(!size || size > MAXSTAGE2SIZE)
-        shutdown(1, pos_y, "Error: stage2 doesn't exist or exceeds max size");
+        shutdown(1, pos_y, "Error: stage2.bin doesn't exist or exceeds\nmax size");
     memset((u8 *)STAGE2OFFSET, 0, MAXSTAGE2SIZE);
     fileRead((u8 *)STAGE2OFFSET, path, size);
     if(mode) return;
@@ -35,7 +35,7 @@ static void installStage2(u32 mode, int pos_y){
 }
 
 void installer(void){
-    drawString("Safe A9LH Installer v1.1", 10, 10, 0x0000FF);
+    drawString("Safe A9LH Installer v1.2", 10, 10, 0x0000FF);
     int pos_y = drawString("Thanks to delebile, #cakey and StandardBus", 10, 40, 0xFFFFFF);
     pos_y = drawString("Press SELECT for a full install", 10, pos_y + SPACING_VERT, 0xFFFFFF);
     pos_y = drawString("Press START to only update stage2", 10, pos_y, 0xFFFFFF);
@@ -50,28 +50,38 @@ void installer(void){
     //Detect the console being used
     u32 console = (PDN_MPCORE_CFG == 1) ? 0 : 1;
 
+    const char *path;
+
+    //If making a first install, we need the OTP
+    if(!a9lhBoot){
+        //Read OTP
+        path = "a9lh/otp.bin";
+        if(fileSize(path) != 256)
+            shutdown(1, pos_y, "Error: otp.bin doesn't exist or has a wrong size");
+        fileRead((u8 *)OTPOFFSET, path, 256);
+    }
+
+    //Setup the key sector de/encryption with the SHA register or otp.bin
+    setupKeyslot0x11(a9lhBoot, (u8 *)OTPOFFSET);
+
+    if(a9lhBoot && !testOtp(a9lhBoot))
+        shutdown(1, pos_y, "Error: the OTP hash is invalid");
+
+    if(!a9lhBoot && console && !testOtp(a9lhBoot))
+        shutdown(1, pos_y, "Error: otp.bin is invalid or corrupted");
+
     //Calculate the CTR for the 3DS partitions
     getNandCTR();
 
     //Test that the CTR is correct
     readFirm0((u8 *)TEMPOFFSET, 0x200);
     if(memcmp((void *)TEMPOFFSET, "FIRM", 4) != 0)
-        shutdown(1, pos_y, "Error: couldn't setup NAND FIRM encryption");
-
-    //Read OTP
-    const char *path = "a9lh/otp.bin";
-    if(fileSize(path) != 256)
-        shutdown(1, pos_y, "Error: otp.bin doesn't exist or has a wrong size");
-    fileRead((u8 *)OTPOFFSET, path, 256);
-
-    setupKeyslot0x11((u8 *)OTPOFFSET);
-    if((a9lhBoot && !testOtp(0)) || (!a9lhBoot && console && !testOtp(1)))
-        shutdown(1, pos_y, "Error: your OTP is invalid or corrupted");
+        shutdown(1, pos_y, "Error: failed to setup FIRM encryption");
 
     //Read decrypted key sector
     path = "a9lh/secret_sector.bin";
     if(fileSize(path) != 0x200)
-        shutdown(1, pos_y, "Error: secret_sector.bin doesn't exist or has a wrong size");
+        shutdown(1, pos_y, "Error: secret_sector.bin doesn't exist or has\na wrong size");
     fileRead((u8 *)SECTOROFFSET, path, 0x200);
     if(!verifyHash((u8 *)SECTOROFFSET, 0x200, sectorHash))
         shutdown(1, pos_y, "Error: secret_sector is invalid");
@@ -86,7 +96,7 @@ void installer(void){
         shutdown(1, pos_y, "Error: firm0.bin doesn't exist");
     fileRead((u8 *)FIRM0OFFSET, path, firm0Size);
     if(!verifyHash((u8 *)FIRM0OFFSET, firm0Size, firm0Hash))
-        shutdown(1, pos_y, "Error: firmo is invalid");
+        shutdown(1, pos_y, "Error: firm0.bin is invalid or corrupted");
 
     //Read FIRM1
     path = "a9lh/firm1.bin";
@@ -95,13 +105,13 @@ void installer(void){
         shutdown(1, pos_y, "Error: firm1.bin doesn't exist");
     fileRead((u8 *)FIRM1OFFSET, path, firm1Size);
     if(!verifyHash((u8 *)FIRM1OFFSET, firm1Size, firm1Hash))
-        shutdown(1, pos_y, "Error: firm1 is invalid");
+        shutdown(1, pos_y, "Error: firm1.bin is invalid or corrupted");
 
     //Inject stage1
     path = "a9lh/payload_stage1.bin";
     u32 size = fileSize(path);
     if(!size || size > MAXSTAGE1SIZE)
-        shutdown(1, pos_y, "Error: stage1 doesn't exist or exceeds max size");
+        shutdown(1, pos_y, "Error: stage1.bin doesn't exist or exceeds\nmax size");
     fileRead((u8 *)STAGE1OFFSET, path, size);
 
     installStage2(1, pos_y);
