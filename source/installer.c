@@ -35,20 +35,20 @@ static void installStage2(u32 mode, int pos_y){
 }
 
 void installer(void){
-    drawString("Safe A9LH Installer v1.2", 10, 10, 0x0000FF);
-    int pos_y = drawString("Thanks to delebile, #cakey and StandardBus", 10, 40, 0xFFFFFF);
-    pos_y = drawString("Press SELECT for a full install", 10, pos_y + SPACING_VERT, 0xFFFFFF);
-    pos_y = drawString("Press START to only update stage2", 10, pos_y, 0xFFFFFF);
-    pos_y = drawString("Press any other button to shutdown", 10, pos_y, 0xFFFFFF);
-
-    u16 pressed = waitInput();
-    if(pressed == BUTTON_START) installStage2(0, pos_y);
-    if(pressed != BUTTON_SELECT) shutdown(0, 0, NULL);
-
     //Determine if booting with A9LH
     u32 a9lhBoot = (PDN_SPI_CNT == 0x0) ? 1 : 0;
     //Detect the console being used
     u32 console = (PDN_MPCORE_CFG == 1) ? 0 : 1;
+
+    drawString("Safe A9LH Installer v1.2.1", 10, 10, 0x0000FF);
+    int pos_y = drawString("Thanks to delebile, #cakey and StandardBus", 10, 40, 0xFFFFFF);
+    pos_y = drawString("Press SELECT for a full install", 10, pos_y + SPACING_VERT, 0xFFFFFF);
+    if(a9lhBoot) pos_y = drawString("Press START to only update stage2", 10, pos_y, 0xFFFFFF);
+    pos_y = drawString("Press any other button to shutdown", 10, pos_y, 0xFFFFFF);
+
+    u16 pressed = waitInput();
+    if(a9lhBoot && pressed == BUTTON_START) installStage2(0, pos_y);
+    if(pressed != BUTTON_SELECT) shutdown(0, 0, NULL);
 
     const char *path;
 
