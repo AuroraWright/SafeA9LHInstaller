@@ -314,12 +314,13 @@ void writeFirm(u8 *inbuf, u32 firm, u32 size){
     sdmmc_nand_writesectors(offset / 0x200, size / 0x200, inbuf);
 }
 
+//Setup keyslot 0x11 for key sector de/encryption
 void setupKeyslot0x11(const u8 *otp){
     u8 shasum[0x20];
     u8 keyX[0x10];
     u8 keyY[0x10];
 
-    //Set keyX and keyY for key sector encryption
+    //Set keyX and keyY
     sha(shasum, otp, 0x90, SHA_256_MODE);
     memcpy(keyX, shasum, 0x10);
     memcpy(keyY, shasum + 0x10, 0x10);
@@ -327,7 +328,7 @@ void setupKeyslot0x11(const u8 *otp){
     aes_setkey(0x11, keyY, AES_KEYY, AES_INPUT_BE | AES_INPUT_NORMAL);
 }
 
-//Get Nand CTR key
+//Generate and encrypt an A9LH key sector
 void generateSector(u8 *keySector){
     //Inject A9LH key2
     memcpy(keySector + 0x10, a9lhKey2, 0x10);
@@ -338,7 +339,7 @@ void generateSector(u8 *keySector){
         aes(keySector + (0x10 * i), keySector + (0x10 * i), 1, NULL, AES_ECB_ENCRYPT_MODE, 0);
 }
 
-//Get Nand CTR key
+//Test the OTP to be correct by verifying key2
 u32 testOtp(u32 mode){
     //Read keysector from NAND
     sdmmc_nand_readsectors(0x96, 0x1, (vu8 *)0x24500000);
@@ -352,6 +353,7 @@ u32 testOtp(u32 mode){
     return 1;
 }
 
+//Check SHA256 hash
 u32 verifyHash(const void *data, u32 size, const u8 *hash){
     u8 shasum[0x20];
     sha(shasum, data, size, SHA_256_MODE);

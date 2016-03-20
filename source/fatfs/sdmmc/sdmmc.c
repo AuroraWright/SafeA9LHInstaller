@@ -402,7 +402,6 @@ int sdmmc_sdcard_init()
     return result | SD_Init();
 }
 
-
 int sdmmc_get_cid( int isNand, uint32_t *info)
 {
 	struct mmcdevice *device;
