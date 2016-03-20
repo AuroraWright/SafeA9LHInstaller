@@ -21,17 +21,21 @@ static const u8 firm1Hash[0x20] = {
     0x2D, 0x3D, 0x56, 0x6C, 0x6A, 0x1A, 0x8E, 0x52, 0x54, 0xE3, 0x89, 0xC2, 0x95, 0x06, 0x23, 0xE5
 };
 
-static void installStage2(u32 mode, int pos_y){
+static const char *path;
+static u32 size;
+int pos_y;
+
+static void installStage2(u32 mode){
     //Read stage2
-    char *path = "a9lh/payload_stage2.bin";
-    u32 size = fileSize(path);
+    path = "a9lh/payload_stage2.bin";
+    size = fileSize(path);
     if(!size || size > MAXSTAGE2SIZE)
-        shutdown(1, pos_y, "Error: stage2.bin doesn't exist or exceeds\nmax size");
+        shutdown(1, "Error: stage2.bin doesn't exist or exceeds\nmax size");
     memset((u8 *)STAGE2OFFSET, 0, MAXSTAGE2SIZE);
     fileRead((u8 *)STAGE2OFFSET, path, size);
     if(mode) return;
     sdmmc_nand_writesectors(0x5C000, 0x20, (vu8 *)STAGE2OFFSET);
-    shutdown(1, pos_y, "Success!");
+    shutdown(2, "Stage2 update: success!");
 }
 
 void installer(void){
@@ -40,24 +44,27 @@ void installer(void){
     //Detect the console being used
     u32 console = (PDN_MPCORE_CFG == 1) ? 0 : 1;
 
-    drawString("Safe A9LH Installer v1.2.1", 10, 10, 0x0000FF);
-    int pos_y = drawString("Thanks to delebile, #cakey and StandardBus", 10, 40, 0xFFFFFF);
-    pos_y = drawString("Press SELECT for a full install", 10, pos_y + SPACING_VERT, 0xFFFFFF);
-    if(a9lhBoot) pos_y = drawString("Press START to only update stage2", 10, pos_y, 0xFFFFFF);
-    pos_y = drawString("Press any other button to shutdown", 10, pos_y, 0xFFFFFF);
+    while(1){
+        clearScreens();
+        drawString("Safe A9LH Installer v1.3", 10, 10, 0xff9900);
+        pos_y = drawString("Thanks to delebile, #cakey and StandardBus", 10, 40, 0xFFFFFF);
+        pos_y = drawString("Press SELECT for a full install", 10, pos_y + SPACING_VERT, 0xFFFFFF);
+        if(a9lhBoot){ pos_y = drawString("Press START to only update stage2", 10, pos_y, 0xFFFFFF);
+        pos_y = drawString("(Only do stage2 updates from the fork you use!)", 10, pos_y, 0x0000FF); }
+        pos_y = drawString("Press any other button to shutdown", 10, pos_y, 0xFFFFFF);
 
-    u16 pressed = waitInput();
-    if(a9lhBoot && pressed == BUTTON_START) installStage2(0, pos_y);
-    if(pressed != BUTTON_SELECT) shutdown(0, 0, NULL);
-
-    const char *path;
+        u16 pressed = waitInput();
+        if(a9lhBoot && pressed == BUTTON_START) installStage2(0);
+        else if(pressed == BUTTON_SELECT) break;
+        else shutdown(0, NULL);
+    }
 
     //If making a first install, we need the OTP
     if(!a9lhBoot){
         //Read OTP
         path = "a9lh/otp.bin";
         if(fileSize(path) != 256)
-            shutdown(1, pos_y, "Error: otp.bin doesn't exist or has a wrong size");
+            shutdown(1, "Error: otp.bin doesn't exist or has a wrong size");
         fileRead((u8 *)OTPOFFSET, path, 256);
     }
 
@@ -65,10 +72,10 @@ void installer(void){
     setupKeyslot0x11(a9lhBoot, (u8 *)OTPOFFSET);
 
     if(a9lhBoot && !testOtp(a9lhBoot))
-        shutdown(1, pos_y, "Error: the OTP hash is invalid");
+        shutdown(1, "Error: the OTP hash is invalid");
 
     if(!a9lhBoot && console && !testOtp(a9lhBoot))
-        shutdown(1, pos_y, "Error: otp.bin is invalid or corrupted");
+        shutdown(1, "Error: otp.bin is invalid or corrupted");
 
     //Calculate the CTR for the 3DS partitions
     getNandCTR();
@@ -76,15 +83,15 @@ void installer(void){
     //Test that the CTR is correct
     readFirm0((u8 *)TEMPOFFSET, 0x200);
     if(memcmp((void *)TEMPOFFSET, "FIRM", 4) != 0)
-        shutdown(1, pos_y, "Error: failed to setup FIRM encryption");
+        shutdown(1, "Error: failed to setup FIRM encryption");
 
     //Read decrypted key sector
     path = "a9lh/secret_sector.bin";
     if(fileSize(path) != 0x200)
-        shutdown(1, pos_y, "Error: secret_sector.bin doesn't exist or has\na wrong size");
+        shutdown(1, "Error: secret_sector.bin doesn't exist or has\na wrong size");
     fileRead((u8 *)SECTOROFFSET, path, 0x200);
     if(!verifyHash((u8 *)SECTOROFFSET, 0x200, sectorHash))
-        shutdown(1, pos_y, "Error: secret_sector is invalid");
+        shutdown(1, "Error: secret_sector.bin is invalid or corrupted");
 
     //Generate and encrypt a per-console A9LH key sector
     generateSector((void *)SECTOROFFSET);
@@ -93,28 +100,28 @@ void installer(void){
     path = "a9lh/firm0.bin";
     u32 firm0Size = fileSize(path);
     if(!firm0Size)
-        shutdown(1, pos_y, "Error: firm0.bin doesn't exist");
+        shutdown(1, "Error: firm0.bin doesn't exist");
     fileRead((u8 *)FIRM0OFFSET, path, firm0Size);
     if(!verifyHash((u8 *)FIRM0OFFSET, firm0Size, firm0Hash))
-        shutdown(1, pos_y, "Error: firm0.bin is invalid or corrupted");
+        shutdown(1, "Error: firm0.bin is invalid or corrupted");
 
     //Read FIRM1
     path = "a9lh/firm1.bin";
     u32 firm1Size = fileSize(path);
     if(!firm1Size)
-        shutdown(1, pos_y, "Error: firm1.bin doesn't exist");
+        shutdown(1, "Error: firm1.bin doesn't exist");
     fileRead((u8 *)FIRM1OFFSET, path, firm1Size);
     if(!verifyHash((u8 *)FIRM1OFFSET, firm1Size, firm1Hash))
-        shutdown(1, pos_y, "Error: firm1.bin is invalid or corrupted");
+        shutdown(1, "Error: firm1.bin is invalid or corrupted");
 
     //Inject stage1
     path = "a9lh/payload_stage1.bin";
-    u32 size = fileSize(path);
+    size = fileSize(path);
     if(!size || size > MAXSTAGE1SIZE)
-        shutdown(1, pos_y, "Error: stage1.bin doesn't exist or exceeds\nmax size");
+        shutdown(1, "Error: stage1.bin doesn't exist or exceeds\nmax size");
     fileRead((u8 *)STAGE1OFFSET, path, size);
 
-    installStage2(1, pos_y);
+    installStage2(1);
 
     pos_y = drawString("All checks passed, installing...", 10, pos_y + SPACING_VERT, 0xFFFFFF);
 
@@ -124,5 +131,5 @@ void installer(void){
     writeFirm((u8 *)FIRM0OFFSET, 0, firm0Size);
     sdmmc_nand_writesectors(0x96, 0x1, (vu8 *)SECTOROFFSET);
 
-    shutdown(1, pos_y, "Success!");
+    shutdown(1, "Full install: success!");
 }

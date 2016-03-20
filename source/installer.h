@@ -1,11 +1,9 @@
-#include "types.h"
-
 #pragma once
+
+#include "types.h"
 
 #define PDN_MPCORE_CFG     (*(vu8 *)0x10140FFC)
 #define PDN_SPI_CNT        (*(vu8 *)0x101401C0)
-#define BUTTON_SELECT      (1 << 2)
-#define BUTTON_START       (1 << 3)
 
 #define OTPOFFSET 0x24000000
 #define SECTOROFFSET 0x24100000
