@@ -9,7 +9,6 @@
 #include "fs.h"
 #include "installer.h"
 #include "screeninit.h"
-#include "draw.h"
 #include "types.h"
 
 #define PDN_GPU_CNT (*(vu8 *)0x10141200)

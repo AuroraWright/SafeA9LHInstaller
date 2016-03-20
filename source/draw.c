@@ -18,7 +18,7 @@ static int strlen(const char *string)
     return stringEnd - string;
 }
 
-void clearScreens()
+void clearScreens(void)
 {
     memset32(fb->top_left, 0, 0x46500);
     memset32(fb->top_right, 0, 0x46500);
