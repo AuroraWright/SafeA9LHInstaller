@@ -2,4 +2,6 @@
 
 #include "types.h"
 
-void initLCD(void);
+#define PDN_GPU_CNT (*(vu8 *)0x10141200)
+
+void initScreens(void);

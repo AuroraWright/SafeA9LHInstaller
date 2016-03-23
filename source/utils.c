@@ -27,11 +27,12 @@ u16 waitInput(void){
 
 void shutdown(u32 mode, char *message){
     if(mode){
-        pos_y = drawString(message, 10, pos_y + SPACING_VERT, 0xFFFFFF);
-        if(mode == 1) drawString("Press any button to shutdown", 10, pos_y, 0xFFFFFF);
+        pos_y = drawString(message, 10, pos_y + SPACING_VERT, COLOR_WHITE);
+        if(mode == 1) drawString("Press any button to shutdown", 10, pos_y, COLOR_WHITE);
         else {
-            pos_y = drawString("Press START or SELECT to return to menu", 10, pos_y, 0x0000FF);
-            pos_y = drawString("Press any other button to shutdown", 10, pos_y, 0xFFFFFF);
+            pos_y = drawString("Press START or SELECT to return to menu", 10, pos_y, COLOR_RED);
+            pos_y = drawString("(SD will be unmounted until the next install)", 10, pos_y, COLOR_RED);
+            pos_y = drawString("Press any other button to shutdown", 10, pos_y, COLOR_WHITE);
         }
         u16 pressed = waitInput();
         if(mode == 2 && (pressed & (BUTTON_START | BUTTON_SELECT))) return;

@@ -1,7 +1,7 @@
 #include "screeninit.h"
 #include "i2c.h"
 
-void initLCD(void){
+void initScreens(void){
     vu32 *const arm11 = (vu32 *)0x1FFFFFF8;
 
     void __attribute__((naked)) ARM11(void){
@@ -9,8 +9,8 @@ void initLCD(void){
         *(vu32 *)0x10141200 = 0x1007F;
         *(vu32 *)0x10202014 = 0x00000001;
         *(vu32 *)0x1020200C &= 0xFFFEFFFE;
-        *(vu32 *)0x10202240 = 0x39;
-        *(vu32 *)0x10202A40 = 0x39;
+        *(vu32 *)0x10202240 = 0x45;
+        *(vu32 *)0x10202A40 = 0x45;
         *(vu32 *)0x10202244 = 0x1023E;
         *(vu32 *)0x10202A44 = 0x1023E;
 
@@ -103,6 +103,8 @@ void initLCD(void){
         while(1);
     }
 
-    *arm11 = (u32)ARM11;
-    while(*arm11);
+    if(PDN_GPU_CNT == 0x1){
+        *arm11 = (u32)ARM11;
+        while(*arm11);
+    }
 }

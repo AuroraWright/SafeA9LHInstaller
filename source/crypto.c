@@ -349,16 +349,16 @@ void generateSector(u8 *keySector){
 }
 
 //Test the OTP to be correct by verifying key2
-u32 testOtp(u32 a9lhBoot){
+u32 testOtp(u32 a9lhBoot, void *tempOffset){
     //Read keysector from NAND
-    sdmmc_nand_readsectors(0x96, 0x1, (vu8 *)0x24500000);
+    sdmmc_nand_readsectors(0x96, 0x1, (vu8 *)tempOffset);
 
     //Decrypt key2
     aes_use_keyslot(0x11);
-    aes((void *)0x24500000 + 0x10, (void *)0x24500000 + 0x10, 1, NULL, AES_ECB_DECRYPT_MODE, 0);
+    aes((void *)tempOffset + 0x10, (void *)tempOffset + 0x10, 1, NULL, AES_ECB_DECRYPT_MODE, 0);
 
     //Test key2
-    if(memcmp((void *)0x24500000 + 0x10, a9lhBoot ? a9lhKey2 : key2, 0x10) != 0) return 0;
+    if(memcmp((void *)tempOffset + 0x10, a9lhBoot ? a9lhKey2 : key2, 0x10) != 0) return 0;
     return 1;
 }
 

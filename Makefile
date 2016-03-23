@@ -4,21 +4,14 @@ CC := arm-none-eabi-gcc
 AS := arm-none-eabi-as
 LD := arm-none-eabi-ld
 OC := arm-none-eabi-objcopy
-OPENSSL := openssl
-
-PYTHON3 := python
-PYTHON_VER_MAJOR := $(word 2, $(subst ., , $(shell python --version 2>&1)))
-ifneq ($(PYTHON_VER_MAJOR), 3)
-	PYTHON3 := py -3
-endif
 
 name := SafeA9LHInstaller
 
 dir_source := source
-dir_build := build
 dir_mset := CakeHax
-dir_out := out
 dir_ninjhax := CakeBrah
+dir_build := build
+dir_out := out
 
 ASFLAGS := -mlittle-endian -mcpu=arm946e-s -march=armv5te
 CFLAGS := -Wall -Wextra -MMD -MP -marm $(ASFLAGS) -fno-builtin -fshort-wchar -std=c11 -Wno-main -O2 -ffast-math
@@ -41,25 +34,34 @@ a9lh: $(dir_out)/arm9loaderhax.bin
 .PHONY: ninjhax
 ninjhax: $(dir_out)/3ds/$(name)
 
+.PHONY: release
+release: $(dir_out)/$(name).zip
+
 .PHONY: clean
 clean:
 	@$(MAKE) $(FLAGS) -C $(dir_mset) clean
 	@$(MAKE) $(FLAGS) -C $(dir_ninjhax) clean
 	@rm -rf $(dir_out) $(dir_build)
 
-$(dir_out)/$(name).dat: $(dir_build)/main.bin
+$(dir_out):
+	@mkdir -p "$(dir_out)"
+
+$(dir_out)/$(name).dat: $(dir_build)/main.bin $(dir_out)
 	@mkdir -p $(dir_out)
 	@$(MAKE) $(FLAGS) -C $(dir_mset) launcher
 	dd if=$(dir_build)/main.bin of=$@ bs=512 seek=144
 
-$(dir_out)/arm9loaderhax.bin: $(dir_build)/main.bin
+$(dir_out)/arm9loaderhax.bin: $(dir_build)/main.bin $(dir_out)
 	@cp -av $(dir_build)/main.bin $@
 
-$(dir_out)/3ds/$(name):
+$(dir_out)/3ds/$(name): $(dir_out)
 	@mkdir -p $(dir_out)/3ds/$(name)
 	@$(MAKE) $(FLAGS) -C $(dir_ninjhax)
 	@mv $(dir_out)/$(name).3dsx $@
 	@mv $(dir_out)/$(name).smdh $@
+
+$(dir_out)/$(name).zip: launcher a9lh ninjhax
+	@cd $(dir_out) && zip -9 -r $(name) *
 
 $(dir_build)/main.bin: $(dir_build)/main.elf
 	$(OC) -S -O binary $< $@
