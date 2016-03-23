@@ -38,4 +38,6 @@ void shutdown(u32 mode, char *message){
     }
     i2cWriteRegister(I2C_DEV_MCU, 0x20, 1);
     while(1);
+    
 }
+

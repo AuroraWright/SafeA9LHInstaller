@@ -26,7 +26,33 @@ static u32 size;
 int pos_y;
 
 static void installStage2(u32 mode){
+    //Warning sequence
+    u32 pad_state;
+    u32 unlockSequenceState2[] = { BUTTON_UP, BUTTON_DOWN, BUTTON_LEFT, BUTTON_RIGHT, BUTTON_B, BUTTON_A, BUTTON_START, BUTTON_SELECT };
+    u32 unlockLvlMax = sizeof(unlockSequenceState2) / sizeof(u32);
+    u32* unlockSequence = unlockSequenceState2;
+    u32 unlockLvl = 0;
+    pos_y = drawString("You are about to update stage2 only.", 10, pos_y + 10, 0x0000FF);
+    pos_y = drawString("Doing this could brick your console!", 10, pos_y, 0x0000FF);
+    pos_y = drawString("If you would like to continue, enter:", 10, pos_y + 10, 0xffffff);
+    pos_y = drawString("<Up>, <Down>, <Left>, <Right>,", 10, pos_y, 0xffffff);
+    pos_y = drawString("<B>, <A>, <START> <SELECT>", 10, pos_y, 0xffffff);
+    while (true) {
+        if (unlockLvl == unlockLvlMax) {
+            break;
+        }
+        pad_state = (u32) waitInput();
+        if (!(pad_state & BUTTON_ANY))
+            continue;
+        else if (pad_state & unlockSequence[unlockLvl])
+            unlockLvl++;
+        else if (unlockLvl == 0 || !(pad_state & unlockSequence[unlockLvl-1]))
+            shutdown(1, "Sequence entered incorrectly.");
+
+    }
+    
     //Read stage2
+    pos_y = drawString("Installing stage2...", 10, pos_y, 0xffffff);
     path = "a9lh/payload_stage2.bin";
     size = fileSize(path);
     if(!size || size > MAXSTAGE2SIZE)
@@ -36,6 +62,7 @@ static void installStage2(u32 mode){
     if(mode) return;
     sdmmc_nand_writesectors(0x5C000, 0x20, (vu8 *)STAGE2OFFSET);
     shutdown(2, "Stage2 update: success!");
+    
 }
 
 void installer(void){
@@ -46,7 +73,7 @@ void installer(void){
 
     while(1){
         clearScreens();
-        drawString("Safe A9LH Installer v1.3", 10, 10, 0xff9900);
+        drawString("Safe A9LH Installer v1.4", 10, 10, 0xff9900);
         pos_y = drawString("Thanks to delebile, #cakey and StandardBus", 10, 40, 0xFFFFFF);
         pos_y = drawString("Press SELECT for a full install", 10, pos_y + SPACING_VERT, 0xFFFFFF);
         if(a9lhBoot){ pos_y = drawString("Press START to only update stage2", 10, pos_y, 0xFFFFFF);
