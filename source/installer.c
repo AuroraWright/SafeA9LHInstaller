@@ -24,6 +24,25 @@ static const u8 firm1Hash[0x20] = {
 int pos_y;
 
 static void installStage2(u32 mode){
+    if(!mode){
+        pos_y = drawString("You are about to update stage2 only", 10, pos_y + 10, COLOR_RED);
+        pos_y = drawString("Doing this could brick your console!", 10, pos_y, COLOR_RED);
+        pos_y = drawString("If you would like to continue, enter:", 10, pos_y, COLOR_WHITE);
+        pos_y = drawString("<Up>, <Down>, <Left>, <Right>,", 10, pos_y, COLOR_WHITE);
+        pos_y = drawString("<B>, <A>, <START> <SELECT>", 10, pos_y, COLOR_WHITE);
+
+        u16 unlockSequence[] = { BUTTON_UP, BUTTON_DOWN, BUTTON_LEFT, BUTTON_RIGHT, BUTTON_B, BUTTON_A, BUTTON_START, BUTTON_SELECT };
+        u32 sequenceSize = sizeof(unlockSequence) / sizeof(u16);
+
+        for(u32 correctPresses = 0; correctPresses < sequenceSize; correctPresses++){
+            if(waitInput() != unlockSequence[correctPresses])
+                shutdown(1, "Button sequence not entered correctly");
+        }
+
+        //Mount the SD card
+        mountSD();
+    }
+
     //Read stage2
     const char path[] = "a9lh/payload_stage2.bin";
     u32 size = fileSize(path);
@@ -49,7 +68,7 @@ void installer(void){
 
     while(1){
         clearScreens();
-        drawString("Safe A9LH Installer v1.3.1", 10, 10, COLOR_TITLE);
+        drawString("Safe A9LH Installer v1.4", 10, 10, COLOR_TITLE);
         pos_y = drawString("Thanks to delebile, #cakey and StandardBus", 10, 40, COLOR_WHITE);
         pos_y = drawString("Press SELECT for a full install", 10, pos_y + SPACING_VERT, COLOR_WHITE);
         if(a9lhBoot){ pos_y = drawString("Press START to only update stage2", 10, pos_y, COLOR_WHITE);
@@ -57,13 +76,7 @@ void installer(void){
         pos_y = drawString("Press any other button to shutdown", 10, pos_y, COLOR_WHITE);
 
         u16 pressed = waitInput();
-        if(a9lhBoot && pressed == BUTTON_START){
-            pos_y = drawString("Stage2 update: are you sure? Press A to confirm", 10, pos_y + SPACING_VERT, COLOR_RED);
-            if(waitInput() == BUTTON_A){
-                mountSD();
-                installStage2(0);
-            }
-        }
+        if(a9lhBoot && pressed == BUTTON_START) installStage2(0);
         else if(pressed == BUTTON_SELECT) break;
         else shutdown(0, NULL);
     }
