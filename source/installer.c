@@ -27,9 +27,8 @@ static void installStage2(u32 mode){
     if(!mode){
         pos_y = drawString("You are about to update stage2 only", 10, pos_y + 10, COLOR_RED);
         pos_y = drawString("Doing this could brick your console!", 10, pos_y, COLOR_RED);
-        pos_y = drawString("If you would like to continue, enter:", 10, pos_y, COLOR_WHITE);
-        pos_y = drawString("<Up>, <Down>, <Left>, <Right>,", 10, pos_y, COLOR_WHITE);
-        pos_y = drawString("<B>, <A>, <START> <SELECT>", 10, pos_y, COLOR_WHITE);
+        pos_y = drawString("If you would like to continue, press:", 10, pos_y, COLOR_WHITE);
+        pos_y = drawString("Up, Down, Left, Right, B, A, START, SELECT", 10, pos_y, COLOR_WHITE);
 
         u16 unlockSequence[] = { BUTTON_UP, BUTTON_DOWN, BUTTON_LEFT, BUTTON_RIGHT, BUTTON_B, BUTTON_A, BUTTON_START, BUTTON_SELECT };
         u32 sequenceSize = sizeof(unlockSequence) / sizeof(u16);
