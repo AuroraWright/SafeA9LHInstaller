@@ -11,6 +11,11 @@ static const u8 sectorHash[0x20] = {
     0xBA, 0xB2, 0x4B, 0x4E, 0x5F, 0x65, 0xC9, 0x81, 0xCD, 0x7B, 0xE6, 0xF4, 0x38, 0xE6, 0xD9, 0xD3
 };
 
+static const u8 sectorA9lhHash[0x20] = {
+    0x89, 0x72, 0xAD, 0x96, 0x42, 0x6F, 0x8A, 0x9B, 0x3E, 0xEB, 0x4C, 0xC9, 0xCC, 0xEF, 0x0E, 0xF4,
+    0x5B, 0x91, 0x91, 0xFB, 0xEE, 0xFC, 0x7E, 0x30, 0xB4, 0x8E, 0xE3, 0x1A, 0x3E, 0xD0, 0x42, 0x3A
+};
+
 static const u8 firm0Hash[0x20] = {
     0xD7, 0xBE, 0x76, 0xE1, 0x81, 0x3F, 0x39, 0x8D, 0xCE, 0xA8, 0x55, 0x72, 0xD0, 0xC0, 0x58, 0xF7,
     0x95, 0x47, 0x61, 0xA1, 0xD5, 0xEA, 0x03, 0xB5, 0xEB, 0x50, 0x47, 0xAC, 0x63, 0xAC, 0x5D, 0x6B
@@ -34,7 +39,7 @@ void installer(void){
     //Detect the console being used
     u32 console = (PDN_MPCORE_CFG == 1) ? 0 : 1;
 
-    drawString("Safe A9LH Installer v1.5", 10, 10, COLOR_TITLE);
+    drawString("Safe A9LH Installer v1.5.1", 10, 10, COLOR_TITLE);
     pos_y = drawString("Thanks to delebile, #cakey and StandardBus", 10, 40, COLOR_WHITE);
     pos_y = drawString(a9lhBoot ? "Press SELECT to update A9LH" : "Press SELECT for a full install", 10, pos_y + SPACING_VERT, COLOR_WHITE);
     pos_y = drawString("Press any other button to shutdown", 10, pos_y, COLOR_WHITE);
@@ -55,12 +60,6 @@ void installer(void){
     //Setup the key sector de/encryption with the SHA register or otp.bin
     setupKeyslot0x11(a9lhBoot, (void *)OTP_OFFSET);
 
-    if(a9lhBoot && !testOtp(a9lhBoot, (u8 *)SECTOR_OFFSET))
-        shutdown(1, "Error: the OTP hash is invalid");
-
-    if(!a9lhBoot && console && !testOtp(a9lhBoot, (u8 *)SECTOR_OFFSET))
-        shutdown(1, "Error: otp.bin is invalid or corrupted");
-
     //Calculate the CTR for the 3DS partitions
     getNandCTR();
 
@@ -69,19 +68,23 @@ void installer(void){
     if(memcmp((void *)FIRM0_OFFSET, "FIRM", 4) != 0)
         shutdown(1, "Error: failed to setup FIRM encryption");
 
-    if(!a9lhBoot){
-        if(!console){
-            //Read decrypted key sector
-            path = "a9lh/secret_sector.bin";
-            if(fileSize(path) != 0x200)
-                shutdown(1, "Error: secret_sector.bin doesn't exist or has\na wrong size");
-            fileRead((void *)SECTOR_OFFSET, path, 0x200);
-            if(!verifyHash((void *)SECTOR_OFFSET, 0x200, sectorHash))
-                shutdown(1, "Error: secret_sector.bin is invalid or corrupted");
-        }
-        else if(!verifyHash((void *)SECTOR_OFFSET, 0x200, sectorHash))
-            shutdown(1, "Error: the NAND key sector is invalid");
+    //If booting from A9LH or on N3DS, we can use the key sector from NAND
+    if(a9lhBoot || console){
+         getSector((u8 *)SECTOR_OFFSET);
+         if(!verifyHash((void *)SECTOR_OFFSET, 0x200, a9lhBoot ? sectorA9lhHash : sectorHash))
+             shutdown(1, a9lhBoot ? "Error: the OTP hash or the NAND key sector\nare invalid" :
+                                    "Error: the otp.bin is invalid or corrupted,\nor you have already installed A9LH");
+    } else {
+         //Read decrypted key sector
+         path = "a9lh/secret_sector.bin";
+         if(fileSize(path) != 0x200)
+             shutdown(1, "Error: secret_sector.bin doesn't exist or has\na wrong size");
+         fileRead((void *)SECTOR_OFFSET, path, 0x200);
+         if(!verifyHash((void *)SECTOR_OFFSET, 0x200, sectorHash))
+             shutdown(1, "Error: secret_sector.bin is invalid or corrupted");
+    }
 
+    if(!a9lhBoot){
         //Generate and encrypt a per-console A9LH key sector
         generateSector((u8 *)SECTOR_OFFSET);
 

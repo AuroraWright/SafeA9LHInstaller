@@ -276,10 +276,6 @@ static const u8 a9lhKey2[0x10] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x3B, 0xF5, 0xF6
 };
 
-static const u8 key2[0x10] = {
-    0x42, 0x3F, 0x81, 0x7A, 0x23, 0x52, 0x58, 0x31, 0x6E, 0x75, 0x8E, 0x3A, 0x39, 0x43, 0x2E, 0xD0
-};
-
 //Get Nand CTR key
 void getNandCTR(void){
     u8 NandCid[0x10];
@@ -348,19 +344,15 @@ void generateSector(u8 *keySector){
         aes(keySector + (0x10 * i), keySector + (0x10 * i), 1, NULL, AES_ECB_ENCRYPT_MODE, 0);
 }
 
-//Test the OTP to be correct by verifying key2
-u32 testOtp(u32 a9lhBoot, u8 *keySector){
+//Read and decrypt NAND key sector
+void getSector(u8 *keySector){
     //Read keysector from NAND
     sdmmc_nand_readsectors(0x96, 1, keySector);
 
-    //Decrypt keys (we need just key2 on A9LH)
+    //Decrypt key sector
     aes_use_keyslot(0x11);
-    for(u32 i = 0, keysAmount = a9lhBoot ? 2 : 32; i < keysAmount; i++)
+    for(u32 i = 0; i < 32; i++)
         aes(keySector + (0x10 * i), keySector + (0x10 * i), 1, NULL, AES_ECB_DECRYPT_MODE, 0);
-
-    //Test key2
-    if(memcmp(keySector + 0x10, a9lhBoot ? a9lhKey2 : key2, 0x10) != 0) return 0;
-    return 1;
 }
 
 //Check SHA256 hash

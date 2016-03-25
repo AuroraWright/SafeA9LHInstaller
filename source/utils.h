@@ -7,6 +7,7 @@
 
 #define COLOR_TITLE 0xFF9900
 #define COLOR_WHITE 0xFFFFFF
+#define COLOR_RED   0x0000FF
 
 extern int pos_y;
 

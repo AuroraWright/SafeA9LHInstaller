@@ -27,7 +27,7 @@ u16 waitInput(void){
 
 void shutdown(u32 mode, char *message){
     if(mode){
-        pos_y = drawString(message, 10, pos_y + SPACING_VERT, COLOR_WHITE);
+        pos_y = drawString(message, 10, pos_y + SPACING_VERT, COLOR_RED);
         drawString("Press any button to shutdown", 10, pos_y, COLOR_WHITE);
         waitInput();
     }
