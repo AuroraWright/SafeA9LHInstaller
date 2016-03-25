@@ -47,8 +47,8 @@ static void installStage2(u32 mode){
     u32 size = fileSize(path);
     if(!size || size > MAX_STAGE2_SIZE)
         shutdown(1, "Error: stage2.bin doesn't exist or exceeds\nmax size");
-    memset((u8 *)STAGE2_OFFSET, 0, MAX_STAGE2_SIZE);
-    fileRead((u8 *)STAGE2_OFFSET, path, size);
+    memset((void *)STAGE2_OFFSET, 0, MAX_STAGE2_SIZE);
+    fileRead((void *)STAGE2_OFFSET, path, size);
 
     if(mode) return;
 
@@ -91,16 +91,16 @@ void installer(void){
         path = "a9lh/otp.bin";
         if(fileSize(path) != 256)
             shutdown(1, "Error: otp.bin doesn't exist or has a wrong size");
-        fileRead((u8 *)OTP_OFFSET, path, 256);
+        fileRead((void *)OTP_OFFSET, path, 256);
     }
 
     //Setup the key sector de/encryption with the SHA register or otp.bin
-    setupKeyslot0x11(a9lhBoot, (u8 *)OTP_OFFSET);
+    setupKeyslot0x11(a9lhBoot, (void *)OTP_OFFSET);
 
-    if(a9lhBoot && !testOtp(a9lhBoot, (void *)TEMP_OFFSET))
+    if(a9lhBoot && !testOtp(a9lhBoot, (u8 *)TEMP_OFFSET))
         shutdown(1, "Error: the OTP hash is invalid");
 
-    if(!a9lhBoot && console && !testOtp(a9lhBoot, (void *)TEMP_OFFSET))
+    if(!a9lhBoot && console && !testOtp(a9lhBoot, (u8 *)TEMP_OFFSET))
         shutdown(1, "Error: otp.bin is invalid or corrupted");
 
     //Calculate the CTR for the 3DS partitions
@@ -115,20 +115,20 @@ void installer(void){
     path = "a9lh/secret_sector.bin";
     if(fileSize(path) != 0x200)
         shutdown(1, "Error: secret_sector.bin doesn't exist or has\na wrong size");
-    fileRead((u8 *)SECTOR_OFFSET, path, 0x200);
-    if(!verifyHash((u8 *)SECTOR_OFFSET, 0x200, sectorHash))
+    fileRead((void *)SECTOR_OFFSET, path, 0x200);
+    if(!verifyHash((void *)SECTOR_OFFSET, 0x200, sectorHash))
         shutdown(1, "Error: secret_sector.bin is invalid or corrupted");
 
     //Generate and encrypt a per-console A9LH key sector
-    generateSector((void *)SECTOR_OFFSET);
+    generateSector((u8 *)SECTOR_OFFSET);
 
     //Read FIRM0
     path = "a9lh/firm0.bin";
     u32 firm0Size = fileSize(path);
     if(!firm0Size)
         shutdown(1, "Error: firm0.bin doesn't exist");
-    fileRead((u8 *)FIRM0_OFFSET, path, firm0Size);
-    if(!verifyHash((u8 *)FIRM0_OFFSET, firm0Size, firm0Hash))
+    fileRead((void *)FIRM0_OFFSET, path, firm0Size);
+    if(!verifyHash((void *)FIRM0_OFFSET, firm0Size, firm0Hash))
         shutdown(1, "Error: firm0.bin is invalid or corrupted");
 
     //Read FIRM1
@@ -136,8 +136,8 @@ void installer(void){
     u32 firm1Size = fileSize(path);
     if(!firm1Size)
         shutdown(1, "Error: firm1.bin doesn't exist");
-    fileRead((u8 *)FIRM1_OFFSET, path, firm1Size);
-    if(!verifyHash((u8 *)FIRM1_OFFSET, firm1Size, firm1Hash))
+    fileRead((void *)FIRM1_OFFSET, path, firm1Size);
+    if(!verifyHash((void *)FIRM1_OFFSET, firm1Size, firm1Hash))
         shutdown(1, "Error: firm1.bin is invalid or corrupted");
 
     //Inject stage1
@@ -145,7 +145,7 @@ void installer(void){
     u32 size = fileSize(path);
     if(!size || size > MAX_STAGE1_SIZE)
         shutdown(1, "Error: stage1.bin doesn't exist or exceeds\nmax size");
-    fileRead((u8 *)STAGE1_OFFSET, path, size);
+    fileRead((void *)STAGE1_OFFSET, path, size);
 
     installStage2(1);
 

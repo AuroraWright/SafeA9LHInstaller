@@ -320,7 +320,7 @@ void writeFirm(u8 *inbuf, u32 firm, u32 size){
 }
 
 //Setup keyslot 0x11 for key sector de/encryption
-void setupKeyslot0x11(u32 a9lhBoot, const u8 *otp){
+void setupKeyslot0x11(u32 a9lhBoot, const void *otp){
     u8 shasum[0x20];
     u8 keyX[0x10];
     u8 keyY[0x10];
@@ -349,16 +349,16 @@ void generateSector(u8 *keySector){
 }
 
 //Test the OTP to be correct by verifying key2
-u32 testOtp(u32 a9lhBoot, void *tempOffset){
+u32 testOtp(u32 a9lhBoot, u8 *tempOffset){
     //Read keysector from NAND
-    sdmmc_nand_readsectors(0x96, 0x1, (vu8 *)tempOffset);
+    sdmmc_nand_readsectors(0x96, 1, tempOffset);
 
     //Decrypt key2
     aes_use_keyslot(0x11);
-    aes((void *)tempOffset + 0x10, (void *)tempOffset + 0x10, 1, NULL, AES_ECB_DECRYPT_MODE, 0);
+    aes(tempOffset + 0x10, tempOffset + 0x10, 1, NULL, AES_ECB_DECRYPT_MODE, 0);
 
     //Test key2
-    if(memcmp((void *)tempOffset + 0x10, a9lhBoot ? a9lhKey2 : key2, 0x10) != 0) return 0;
+    if(memcmp(tempOffset + 0x10, a9lhBoot ? a9lhKey2 : key2, 0x10) != 0) return 0;
     return 1;
 }
 

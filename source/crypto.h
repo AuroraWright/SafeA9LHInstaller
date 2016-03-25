@@ -79,7 +79,7 @@
 void getNandCTR(void);
 void readFirm0(u8 *outbuf, u32 size);
 void writeFirm(u8 *inbuf, u32 offset, u32 size);
-void setupKeyslot0x11(u32 a9lhBoot, const u8 *otp);
+void setupKeyslot0x11(u32 a9lhBoot, const void *otp);
 void generateSector(u8 *keySector);
-u32 testOtp(u32 a9lhBoot, void *tempOffset);
+u32 testOtp(u32 a9lhBoot, u8 *tempOffset);
 u32 verifyHash(const void *data, u32 size, const u8 *hash);
