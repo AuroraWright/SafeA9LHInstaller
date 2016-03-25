@@ -340,11 +340,11 @@ void generateSector(u8 *keySector){
 
     //Encrypt key sector
     aes_use_keyslot(0x11);
-    for(u32 i = 0; i<32; i++)
+    for(u32 i = 0; i < 32; i++)
         aes(keySector + (0x10 * i), keySector + (0x10 * i), 1, NULL, AES_ECB_ENCRYPT_MODE, 0);
 }
 
-//Read and decrypt NAND key sector
+//Read and decrypt the NAND key sector
 void getSector(u8 *keySector){
     //Read keysector from NAND
     sdmmc_nand_readsectors(0x96, 1, keySector);

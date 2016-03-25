@@ -12,4 +12,4 @@
 extern int pos_y;
 
 u16 waitInput(void);
-void shutdown(u32 mode, char *message);
+void shutdown(u32 mode, const char *message);

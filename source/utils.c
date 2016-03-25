@@ -18,14 +18,14 @@ u16 waitInput(void){
         for(u32 i = 0x13000; i; i--){
             if (key != HID_PAD)
                 break;
-            if(i==1) pressedkey = 1;
+            if(i == 1) pressedkey = 1;
         }
-    } while (!pressedkey);
+    } while(!pressedkey);
 
     return key;
 }
 
-void shutdown(u32 mode, char *message){
+void shutdown(u32 mode, const char *message){
     if(mode){
         pos_y = drawString(message, 10, pos_y + SPACING_VERT, COLOR_RED);
         drawString("Press any button to shutdown", 10, pos_y, COLOR_WHITE);
