@@ -6,7 +6,7 @@
 #define BUTTON_SELECT (1 << 2)
 
 #define COLOR_TITLE 0xFF9900
-#define COLOR_RED   0x0000FF
+#define COLOR_WHITE 0xFFFFFF
 
 extern int pos_y;
 
