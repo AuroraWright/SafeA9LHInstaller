@@ -12,11 +12,6 @@ u32 mountSD(void){
     return 1;
 }
 
-u32 unmountSD(void){
-    if(f_mount(NULL, "0:", 1) != FR_OK) return 0;
-    return 1;
-}
-
 u32 fileRead(void *dest, const char *path, u32 size){
     FRESULT fr;
     FIL fp;

@@ -1,4 +1,5 @@
 #include "screeninit.h"
+#include "draw.h"
 #include "i2c.h"
 
 void initScreens(void){
@@ -107,4 +108,6 @@ void initScreens(void){
         *arm11 = (u32)ARM11;
         while(*arm11);
     }
+
+    clearScreens();
 }
