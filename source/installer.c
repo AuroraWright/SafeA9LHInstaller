@@ -36,7 +36,7 @@ void installer(void){
 
     drawString("Safe A9LH Installer v1.5", 10, 10, COLOR_TITLE);
     pos_y = drawString("Thanks to delebile, #cakey and StandardBus", 10, 40, COLOR_WHITE);
-    pos_y = drawString(a9lhBoot ? "Press SELECT to update A9LH" : "Press SELECT for a full install", 10, pos_y, COLOR_WHITE);
+    pos_y = drawString(a9lhBoot ? "Press SELECT to update A9LH" : "Press SELECT for a full install", 10, pos_y + SPACING_VERT, COLOR_WHITE);
     pos_y = drawString("Press any other button to shutdown", 10, pos_y, COLOR_WHITE);
 
     if(waitInput() != BUTTON_SELECT) shutdown(0, NULL);
