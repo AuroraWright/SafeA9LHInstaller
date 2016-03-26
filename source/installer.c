@@ -42,9 +42,11 @@ void installer(void){
     drawString("Safe A9LH Installer v1.5.1", 10, 10, COLOR_TITLE);
     pos_y = drawString("Thanks to delebile, #cakey and StandardBus", 10, 40, COLOR_WHITE);
     pos_y = drawString(a9lhBoot ? "Press SELECT to update A9LH" : "Press SELECT for a full install", 10, pos_y + SPACING_VERT, COLOR_WHITE);
+    pos_y = drawString("Press START to install an alternate stage2 (EXPERIMENTAL)", 10, pos_y, COLOR_WHITE);
     pos_y = drawString("Press any other button to shutdown", 10, pos_y, COLOR_WHITE);
 
-    if(waitInput() != BUTTON_SELECT) shutdown(0, NULL);
+    if(waitInput() == BUTTON_START) altStage2();
+    else if (waitInput() != BUTTON_SELECT) shutdown(0, NULL);
 
     const char *path;
 
@@ -132,4 +134,32 @@ void installer(void){
     writeFirm((u8 *)FIRM0_OFFSET, 0, FIRM_SIZE);
 
     shutdown(1, a9lhBoot ? "Update: success!" : "Full install: success!");
+}
+
+void altStage2(void) {
+    pos_y = drawString("WARNING:", 10, pos_y, COLOR_RED);
+    pos_y = drawString("This is an untested experimental feature.", 10, pos_y, COLOR_WHITE);
+    pos_y = drawString("Proceed only if you know what you are doing.", 10, pos_y, COLOR_WHITE);
+    pos_y = drawString("Press X to continue or any other button to shutdown.", 10, pos_y, COLOR_WHITE);
+    if (waitInput() != BUTTON_X) shutdown(0, NULL);
+    
+    const char *path;
+    pos_y = drawString("Checking alternate stage2...", 10, pos_y, COLOR_WHITE);
+    
+    path = "a9lh/payload_altstage2.bin";
+    u32 size = fileSize(path);
+    if(!size || size > MAX_ALTSTAGE2_SIZE)
+        shutdown(1, "Error: altstage2.bin doesn't exist or exceeds\nmax size");
+    memset((void *)ALTSTAGE2_OFFSET, 0, MAX_ALTSTAGE2_SIZE);
+    fileRead((void *)ALTSTAGE2_OFFSET, path, size);
+    
+    pos_y = drawString("Installing altstage2...", 10, pos_y, COLOR_WHITE);
+    
+    sdmmc_nand_writesectors(0x5A000, 0x20, (vu8 *)ALTSTAGE2_OFFSET);
+    
+    shutdown(1, "Alternate stage2: success!");
+    
+    
+    
+
 }

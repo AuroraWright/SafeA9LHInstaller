@@ -4,6 +4,8 @@
 
 #define HID_PAD       (*(vu16 *)0x10146000 ^ 0xFFF)
 #define BUTTON_SELECT (1 << 2)
+#define BUTTON_START (1 << 3)
+#define BUTTON_X (1 << 10)
 
 #define COLOR_TITLE 0xFF9900
 #define COLOR_WHITE 0xFFFFFF
