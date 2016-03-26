@@ -18,23 +18,18 @@ u16 waitInput(void){
         for(u32 i = 0x13000; i; i--){
             if (key != HID_PAD)
                 break;
-            if(i==1) pressedkey = 1;
+            if(i == 1) pressedkey = 1;
         }
-    } while (!pressedkey);
+    } while(!pressedkey);
 
     return key;
 }
 
-void shutdown(u32 mode, char *message){
+void shutdown(u32 mode, const char *message){
     if(mode){
-        pos_y = drawString(message, 10, pos_y + SPACING_VERT, 0xFFFFFF);
-        if(mode == 1) drawString("Press any button to shutdown", 10, pos_y, 0xFFFFFF);
-        else {
-            pos_y = drawString("Press START or SELECT to return to menu", 10, pos_y, 0x0000FF);
-            pos_y = drawString("Press any other button to shutdown", 10, pos_y, 0xFFFFFF);
-        }
-        u16 pressed = waitInput();
-        if(mode == 2 && (pressed & (BUTTON_START | BUTTON_SELECT))) return;
+        pos_y = drawString(message, 10, pos_y + SPACING_VERT, COLOR_RED);
+        drawString("Press any button to shutdown", 10, pos_y, COLOR_WHITE);
+        waitInput();
     }
     i2cWriteRegister(I2C_DEV_MCU, 0x20, 1);
     while(1);
