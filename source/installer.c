@@ -45,8 +45,8 @@ void installer(void){
     pos_y = drawString("Press START to install an alternate stage2 (EXPERIMENTAL)", 10, pos_y, COLOR_WHITE);
     pos_y = drawString("Press any other button to shutdown", 10, pos_y, COLOR_WHITE);
 
-    if(waitInput() = BUTTON_START) altStage2();
-    else if (waitInput != BUTTON_SELECT) shutdown(0, NULL);
+    if(waitInput() == BUTTON_START) altStage2();
+    else if (waitInput() != BUTTON_SELECT) shutdown(0, NULL);
 
     const char *path;
 
@@ -147,7 +147,7 @@ void altStage2(void) {
     pos_y = drawString("Checking alternate stage2...", 10, pos_y, COLOR_WHITE);
     
     path = "a9lh/payload_altstage2.bin";
-    size = fileSize(path);
+    u32 size = fileSize(path);
     if(!size || size > MAX_ALTSTAGE2_SIZE)
         shutdown(1, "Error: altstage2.bin doesn't exist or exceeds\nmax size");
     memset((void *)ALTSTAGE2_OFFSET, 0, MAX_ALTSTAGE2_SIZE);

@@ -19,3 +19,4 @@
 #define MAX_ALTSTAGE2_SIZE 0x2000
 
 void installer(void);
+void altStage2(void);
