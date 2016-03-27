@@ -8,8 +8,9 @@
 #define COLOR_TITLE 0xFF9900
 #define COLOR_WHITE 0xFFFFFF
 #define COLOR_RED   0x0000FF
+#define COLOR_GREEN 0x00FF00
 
-extern int pos_y;
+int pos_y;
 
 u16 waitInput(void);
 void shutdown(u32 mode, const char *message);

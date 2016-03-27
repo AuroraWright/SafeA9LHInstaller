@@ -39,7 +39,7 @@ void installer(void){
     //Detect the console being used
     u32 console = (PDN_MPCORE_CFG == 1) ? 0 : 1;
 
-    drawString("Safe A9LH Installer v1.5.1", 10, 10, COLOR_TITLE);
+    drawString(TITLE, 10, 10, COLOR_TITLE);
     pos_y = drawString("Thanks to delebile, #cakey and StandardBus", 10, 40, COLOR_WHITE);
     pos_y = drawString(a9lhBoot ? "Press SELECT to update A9LH" : "Press SELECT for a full install", 10, pos_y + SPACING_VERT, COLOR_WHITE);
     pos_y = drawString("Press any other button to shutdown", 10, pos_y, COLOR_WHITE);
@@ -131,5 +131,5 @@ void installer(void){
     sdmmc_nand_writesectors(0x96, 1, (vu8 *)SECTOR_OFFSET); }
     writeFirm((u8 *)FIRM0_OFFSET, 0, FIRM_SIZE);
 
-    shutdown(1, a9lhBoot ? "Update: success!" : "Full install: success!");
+    shutdown(2, a9lhBoot ? "Update: success!" : "Full install: success!");
 }
