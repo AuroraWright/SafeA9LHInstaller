@@ -39,7 +39,7 @@ void installer(void){
     //Detect the console being used
     u32 console = (PDN_MPCORE_CFG == 1) ? 0 : 1;
 
-    drawString("Safe A9LH Installer v1.5.1", 10, 10, COLOR_TITLE);
+    drawString(TITLE, 10, 10, COLOR_TITLE);
     pos_y = drawString("Thanks to delebile, #cakey and StandardBus", 10, 40, COLOR_WHITE);
     pos_y = drawString(a9lhBoot ? "Press SELECT to update A9LH" : "Press SELECT for a full install", 10, pos_y + SPACING_VERT, COLOR_WHITE);
     pos_y = drawString("Press any other button to shutdown", 10, pos_y, COLOR_WHITE);
@@ -111,7 +111,7 @@ void installer(void){
     path = "a9lh/payload_stage1.bin";
     u32 size = fileSize(path);
     if(!size || size > MAX_STAGE1_SIZE)
-        shutdown(1, "Error: stage1.bin doesn't exist or exceeds\nmax size");
+        shutdown(1, "Error: payload_stage1.bin doesn't exist or\nexceeds max size");
     memset((void *)STAGE1_OFFSET, 0, MAX_STAGE1_SIZE);
     fileRead((void *)STAGE1_OFFSET, path, size);
 
@@ -119,7 +119,7 @@ void installer(void){
     path = "a9lh/payload_stage2.bin";
     size = fileSize(path);
     if(!size || size > MAX_STAGE2_SIZE)
-        shutdown(1, "Error: stage2.bin doesn't exist or exceeds\nmax size");
+        shutdown(1, "Error: payload_stage2.bin doesn't exist or\nexceeds max size");
     memset((void *)STAGE2_OFFSET, 0, MAX_STAGE2_SIZE);
     fileRead((void *)STAGE2_OFFSET, path, size);
 
@@ -131,5 +131,5 @@ void installer(void){
     sdmmc_nand_writesectors(0x96, 1, (vu8 *)SECTOR_OFFSET); }
     writeFirm((u8 *)FIRM0_OFFSET, 0, FIRM_SIZE);
 
-    shutdown(1, a9lhBoot ? "Update: success!" : "Full install: success!");
+    shutdown(2, a9lhBoot ? "Update: success!" : "Full install: success!");
 }

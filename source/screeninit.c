@@ -3,7 +3,7 @@
 #include "i2c.h"
 
 void initScreens(void){
-    vu32 *const arm11 = (vu32 *)0x1FFFFFF8;
+    vu32 *const arm11 = (u32 *)0x1FFFFFF8;
 
     void __attribute__((naked)) ARM11(void){
         __asm(".word 0xF10C01C0");
