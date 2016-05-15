@@ -37,7 +37,7 @@ void installer(void){
     //Determine if booting with A9LH
     u32 a9lhBoot = (PDN_SPI_CNT == 0x0) ? 1 : 0;
     //Detect the console being used
-    u32 console = (PDN_MPCORE_CFG == 1) ? 0 : 1;
+    u32 console = PDN_MPCORE_CFG == 7;
 
     drawString(TITLE, 10, 10, COLOR_TITLE);
     pos_y = drawString("Thanks to delebile, #cakey and StandardBus", 10, 40, COLOR_WHITE);
