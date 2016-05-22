@@ -1,9 +1,9 @@
 rwildcard = $(foreach d, $(wildcard $1*), $(filter $(subst *, %, $2), $d) $(call rwildcard, $d/, $2))
 
-CC := ~/devkitPro/devkitARM/bin/arm-none-eabi-gcc
-AS := ~/devkitPro/devkitARM/bin/arm-none-eabi-as
-LD := ~/devkitPro/devkitARM/bin/arm-none-eabi-ld
-OC := ~/devkitPro/devkitARM/bin/arm-none-eabi-objcopy
+CC :=arm-none-eabi-gcc
+AS :=arm-none-eabi-as
+LD :=arm-none-eabi-ld
+OC :=arm-none-eabi-objcopy
 
 name := SafeA9LHInstaller
 
