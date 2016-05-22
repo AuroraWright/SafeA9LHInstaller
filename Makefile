@@ -14,7 +14,7 @@ dir_build := build
 dir_out := out
 
 ASFLAGS := -mlittle-endian -mcpu=arm946e-s -march=armv5te
-CFLAGS := -Wall -Wextra -MMD -MP -marm $(ASFLAGS) -fno-builtin -fshort-wchar -std=c11 -Wno-main -O2 -ffast-math
+CFLAGS := -Wall -Wextra -MMD -MP -marm $(ASFLAGS) -fno-builtin -fshort-wchar -std=c11 -Wno-main -O2 -ffast-math -DTITLE="\"$(name) $(version)\""
 FLAGS := name=$(name).dat dir_out=$(abspath $(dir_out)) ICON=$(abspath icon.png) APP_DESCRIPTION="Noob-proof ARM9LoaderHax installer/updater." APP_AUTHOR="Aurora Wright" --no-print-directory
 
 objects= $(patsubst $(dir_source)/%.s, $(dir_build)/%.o, \

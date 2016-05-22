@@ -23,16 +23,6 @@ static const u8 firm1Hash[0x20] = {
 
 int pos_y;
 
-void checkSector(void) {
-    char* path;
-    path = "a9lh/secret_sector.bin";
-    if(fileSize(path) != 0x200)
-        shutdown(1, "Error: secret_sector.bin doesn't exist or has\na wrong size");
-    fileRead((void *)SECTOR_OFFSET, path, 0x200);
-    if(!verifyHash((void *)SECTOR_OFFSET, 0x200, sectorHash))
-        shutdown(1, "Error: secret_sector.bin is invalid or corrupted");
-}
-
 void installer(void){
     //Determine if booting with A9LH
     u32 a9lhBoot = (PDN_SPI_CNT == 0x0) ? 1 : 0;
@@ -41,6 +31,7 @@ void installer(void){
     
     drawString(TITLE, 10, 10, COLOR_TITLE);
     pos_y = drawString("Thanks to delebile, #cakey and StandardBus", 10, 40, COLOR_WHITE);
+    pos_y = drawString("Modified by TheBaloneyboy", 10, pos_y, COLOR_WHITE);
     pos_y = drawString(a9lhBoot ? "Press SELECT to update A9LH" : "Press SELECT for a full install", 10, pos_y + SPACING_VERT, COLOR_WHITE);
     pos_y = drawString("Press any other button to shutdown", 10, pos_y, COLOR_WHITE);
     
@@ -64,7 +55,7 @@ void installer(void){
     getNandCTR();
     
     //Get NAND FIRM0 and test that the CTR is correct
-    readFirm0((u8 *)FIRM0_OFFSET, FIRM_SIZE);
+    readFirm0((u8 *)FIRM0_OFFSET, FIRM0_SIZE);
     if(memcmp((void *)FIRM0_OFFSET, "FIRM", 4) != 0)
     shutdown(1, "Error: failed to setup FIRM encryption");
     
@@ -84,18 +75,18 @@ void installer(void){
         
     //Read FIRM0
     path = "a9lh/firm0.bin";
-    if(fileSize(path) != FIRM_SIZE)
+    if(fileSize(path) != FIRM0_SIZE)
     shutdown(1, "Error: firm0.bin doesn't exist or has a wrong size");
-    fileRead((void *)FIRM0_OFFSET, path, FIRM_SIZE);
-    if(!verifyHash((void *)FIRM0_OFFSET, FIRM_SIZE, firm0Hash))
+    fileRead((void *)FIRM0_OFFSET, path, FIRM0_SIZE);
+    if(!verifyHash((void *)FIRM0_OFFSET, FIRM0_SIZE, firm0Hash))
     shutdown(1, "Error: firm0.bin is invalid or corrupted");
         
     //Read FIRM1
     path = "a9lh/firm1.bin";
-    if(fileSize(path) != FIRM_SIZE)
+    if(fileSize(path) != FIRM1_SIZE)
     shutdown(1, "Error: firm1.bin doesn't exist or has a wrong size");
-    fileRead((void *)FIRM1_OFFSET, path, FIRM_SIZE);
-    if(!verifyHash((void *)FIRM1_OFFSET, FIRM_SIZE, firm1Hash))
+    fileRead((void *)FIRM1_OFFSET, path, FIRM1_SIZE);
+    if(!verifyHash((void *)FIRM1_OFFSET, FIRM1_SIZE, firm1Hash))
     shutdown(1, "Error: firm1.bin is invalid or corrupted");
 
 
@@ -120,9 +111,9 @@ void installer(void){
     
     //Point of no return, install stuff in the safest order
     sdmmc_nand_writesectors(0x5C000, 0x20, (vu8 *)STAGE2_OFFSET);
-    if(!a9lhBoot){ writeFirm((u8 *)FIRM1_OFFSET, 1, FIRM_SIZE);
+    if(!a9lhBoot){ writeFirm((u8 *)FIRM1_OFFSET, 1, FIRM1_SIZE);
         sdmmc_nand_writesectors(0x96, 1, (vu8 *)SECTOR_OFFSET); }
-    writeFirm((u8 *)FIRM0_OFFSET, 0, FIRM_SIZE);
+    writeFirm((u8 *)FIRM0_OFFSET, 0, FIRM0_SIZE);
     
     shutdown(2, a9lhBoot ? "Update: success!" : "Full install: success!");
 }
