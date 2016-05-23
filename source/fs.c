@@ -12,6 +12,21 @@ u32 mountSD(void){
     return 1;
 }
 
+u32 fileWrite(void *orig, const char *path, u32 size){
+    FRESULT fr;
+    FIL fp;
+    unsigned int bw = 0;
+
+    if(!size) return 0;
+    fr = f_open(&fp, path, FA_WRITE | FA_CREATE_ALWAYS);
+    if(fr == FR_OK){
+        fr = f_write(&fp, orig, size, &bw);
+    }
+
+    f_close(&fp);
+    return (fr || (bw != size)) ? 0 : 1;
+}
+
 u32 fileRead(void *dest, const char *path, u32 size){
     FRESULT fr;
     FIL fp;

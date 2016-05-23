@@ -52,9 +52,19 @@ void installer(void){
     if(!a9lhBoot){
         //Read OTP
         path = "a9lh/otp.bin";
-        if(fileSize(path) != 256)
-            shutdown(1, "Error: otp.bin doesn't exist or has a wrong size");
-        fileRead((void *)OTP_OFFSET, path, 256);
+        if(!fileSize(path)) {
+            //File not found, look in memory
+            u8 zeroes[256] = { 0 };
+            if(memcmp((void *)OTP_FROM_MEM, zeroes, 256) == 0)
+                shutdown(1, "Error: otp.bin doesn't exist and can't be dumped");
+            fileWrite((void *)OTP_FROM_MEM, path, 256);
+            memcpy((void *)OTP_OFFSET, (void*)OTP_FROM_MEM, 256);
+        } else if(fileSize(path) != 256) {
+            //File found, but bad size
+            shutdown(1, "Error: otp.bin has a wrong size");
+        } else {
+            fileRead((void *)OTP_OFFSET, path, 256);
+        }
     }
 
     //Setup the key sector de/encryption with the SHA register or otp.bin
