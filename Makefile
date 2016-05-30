@@ -11,6 +11,7 @@ version := $(shell git describe --abbrev=0 --tags)
 dir_source := source
 dir_mset := CakeHax
 dir_ninjhax := CakeBrah
+dir_2xrsa := 2xrsa
 dir_build := build
 dir_out := out
 
@@ -33,6 +34,9 @@ launcher: $(dir_out)/$(name).dat
 .PHONY: a9lh
 a9lh: $(dir_out)/arm9loaderhax.bin
 
+.PHONY: 2xrsa
+2xrsa: $(dir_out)/arm9.bin $(dir_out)/arm11.bin
+
 .PHONY: ninjhax
 ninjhax: $(dir_out)/3ds/$(name)
 
@@ -43,6 +47,7 @@ release: $(dir_out)/$(name).zip
 clean:
 	@$(MAKE) $(FLAGS) -C $(dir_mset) clean
 	@$(MAKE) $(FLAGS) -C $(dir_ninjhax) clean
+	@$(MAKE) -C $(dir_2xrsa) clean
 	@rm -rf $(dir_out) $(dir_build)
 
 $(dir_out):
@@ -56,13 +61,20 @@ $(dir_out)/$(name).dat: $(dir_build)/main.bin $(dir_out)
 $(dir_out)/arm9loaderhax.bin: $(dir_build)/main.bin $(dir_out)
 	@cp -av $(dir_build)/main.bin $@
 
+$(dir_out)/arm9.bin: $(dir_build)/main.bin $(dir_out)
+	@cp -av $(dir_build)/main.bin $@
+
+$(dir_out)/arm11.bin:
+	@$(MAKE) -C $(dir_2xrsa)
+	@cp -av $(dir_2xrsa)/bin/arm11.bin $@
+
 $(dir_out)/3ds/$(name): $(dir_out)
 	@mkdir -p $(dir_out)/3ds/$(name)
 	@$(MAKE) $(FLAGS) -C $(dir_ninjhax)
 	@mv $(dir_out)/$(name).3dsx $@
 	@mv $(dir_out)/$(name).smdh $@
 
-$(dir_out)/$(name).zip: launcher a9lh ninjhax
+$(dir_out)/$(name).zip: launcher a9lh ninjhax 2xrsa
 	@cd $(dir_out) && zip -9 -r $(name) *
 
 $(dir_build)/main.bin: $(dir_build)/main.elf

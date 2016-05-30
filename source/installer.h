@@ -5,6 +5,7 @@
 #define PDN_MPCORE_CFG     (*(vu8 *)0x10140FFC)
 #define PDN_SPI_CNT        (*(vu8 *)0x101401C0)
 
+#define OTP_FROM_MEM 0x10012000
 #define OTP_OFFSET 0x24000000
 #define SECTOR_OFFSET 0x24100000
 #define FIRM0_OFFSET 0x24200000
