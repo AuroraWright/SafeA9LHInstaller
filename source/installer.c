@@ -38,6 +38,7 @@ u32 console;
 void main(void)
 {
     initScreens();
+    sdmmc_sdcard_init();
 
     //Determine if booting with A9LH
     u32 a9lhBoot = !PDN_SPI_CNT;
