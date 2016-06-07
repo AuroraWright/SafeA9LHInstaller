@@ -5,7 +5,6 @@
 #include "fs.h"
 #include "memory.h"
 #include "fatfs/ff.h"
-#include "utils.h"
 
 static FATFS fs;
 
