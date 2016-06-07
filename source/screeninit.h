@@ -1,3 +1,9 @@
+/*
+*   screeninit.h
+*
+*   Screen init code by dark_samus, bil1s, Normmatt, delebile and others.
+*/
+
 #pragma once
 
 #include "types.h"

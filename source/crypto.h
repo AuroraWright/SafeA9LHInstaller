@@ -1,4 +1,8 @@
-// From http://github.com/b1l1s/ctr
+/*
+*   crypto.h
+*
+*   Crypto libs from http://github.com/b1l1s/ctr
+*/
 
 #pragma once
 
@@ -76,10 +80,16 @@
 #define SHA_1_HASH_SIZE		(160 / 8)
 
 //NAND/FIRM stuff
+extern u32 console;
+const u8 key2s[3][0x10];
+
 void getNandCTR(void);
+void ctrNandInit(void);
+u32 ctrNandRead(u32 sector, u32 sectorCount, u8 *outbuf);
 void readFirm0(u8 *outbuf, u32 size);
 void writeFirm(u8 *inbuf, u32 offset, u32 size);
 void setupKeyslot0x11(u32 a9lhBoot, const void *otp);
-void generateSector(u8 *keySector);
+void generateSector(u8 *keySector, u32 mode);
 void getSector(u8 *keySector);
 u32 verifyHash(const void *data, u32 size, const u8 *hash);
+u32 decryptExeFs(u8 *inbuf);

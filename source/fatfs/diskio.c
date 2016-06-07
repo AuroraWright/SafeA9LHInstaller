@@ -9,7 +9,11 @@
 
 #include "diskio.h"		/* FatFs lower layer API */
 #include "sdmmc/sdmmc.h"
+#include "../crypto.h"
 
+/* Definitions of physical drive number for each media */
+#define SDCARD        0
+#define CTRNAND       1
 
 /*-----------------------------------------------------------------------*/
 /* Get Drive Status                                                      */
@@ -30,11 +34,17 @@ DSTATUS disk_status (
 /*-----------------------------------------------------------------------*/
 
 DSTATUS disk_initialize (
-	__attribute__((unused))
 	BYTE pdrv				/* Physical drive nmuber to identify the drive */
 )
 {
-	sdmmc_sdcard_init();
+        static u32 sdmmcInited = 0;
+
+        if(!sdmmcInited)
+            sdmmc_sdcard_init();
+
+        if(pdrv == CTRNAND)
+            ctrNandInit();
+
 	return RES_OK;
 }
 
@@ -45,18 +55,25 @@ DSTATUS disk_initialize (
 /*-----------------------------------------------------------------------*/
 
 DRESULT disk_read (
-	__attribute__((unused))
 	BYTE pdrv,		/* Physical drive nmuber to identify the drive */
 	BYTE *buff,		/* Data buffer to store read data */
 	DWORD sector,	/* Sector address in LBA */
 	UINT count		/* Number of sectors to read */
 )
 {
-	if (sdmmc_sdcard_readsectors(sector, count, buff)) {
-		return RES_PARERR;
-	}
+        switch(pdrv)
+        {
+            case SDCARD:
+                if(sdmmc_sdcard_readsectors(sector, count, (BYTE *)buff))
+		    return RES_PARERR;
+                break;
+            case CTRNAND:
+                if(ctrNandRead(sector, count, (BYTE *)buff))
+		    return RES_PARERR;
+                break;
+        }
 
-	return RES_OK;
+        return RES_OK;
 }
 
 
@@ -67,18 +84,16 @@ DRESULT disk_read (
 
 #if _USE_WRITE
 DRESULT disk_write (
-	__attribute__((unused))
 	BYTE pdrv,			/* Physical drive nmuber to identify the drive */
 	const BYTE *buff,       	/* Data to be written */
 	DWORD sector,		/* Sector address in LBA */
 	UINT count			/* Number of sectors to write */
 )
 {
-	if (sdmmc_sdcard_writesectors(sector, count, (BYTE *)buff)) {
-		return RES_PARERR;
-	}
+        if(pdrv == SDCARD && sdmmc_sdcard_writesectors(sector, count, (BYTE *)buff))
+            return RES_PARERR;
 
-	return RES_OK;
+        return RES_OK;
 }
 #endif
 

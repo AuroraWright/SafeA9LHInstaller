@@ -1,4 +1,8 @@
-// From http://github.com/b1l1s/ctr
+/*
+*   crypto.c
+*
+*   Crypto libs from http://github.com/b1l1s/ctr
+*/
 
 #include "crypto.h"
 #include "memory.h"
@@ -270,26 +274,68 @@ void sha(void *res, const void *src, u32 size, u32 mode)
 *                   Nand/FIRM Crypto stuff
 ****************************************************************/
 
-static u8 CTR[0x10];
+static u8 nandSlot, nandCTR[0x10];
 
-static const u8 a9lhKey2[0x10] = {
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x3B, 0xF5, 0xF6
+static u32 fatStart;
+
+const u8 key2s[3][0x10] = {
+    {0x42, 0x3F, 0x81, 0x7A, 0x23, 0x52, 0x58, 0x31, 0x6E, 0x75, 0x8E, 0x3A, 0x39, 0x43, 0x2E, 0xD0},
+    {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x3B, 0xF5, 0xF6},
+    {0x65, 0x29, 0x3E, 0x12, 0x56, 0x0C, 0x0B, 0xD1, 0xDD, 0xB5, 0x63, 0x1C, 0xB6, 0xD9, 0x52, 0x75}
 };
 
 //Get Nand CTR key
-void getNandCTR(void){
-    u8 NandCid[0x10];
-    u8 shasum[0x20];
+void getNandCTR(void)
+{
+    u8 cid[0x10];
+    u8 shaSum[0x20];
 
-    sdmmc_get_cid(1, (u32 *)NandCid);
-    sha(shasum, NandCid, 0x10, SHA_256_MODE);
-    memcpy(CTR, shasum, 0x10);
+    sdmmc_get_cid(1, (u32 *)cid);
+    sha(shaSum, cid, 0x10, SHA_256_MODE);
+    memcpy(nandCTR, shaSum, 0x10);
+}
+
+//Initialize the CTRNAND crypto
+void ctrNandInit(void)
+{
+    getNandCTR();
+
+    if(console)
+    {
+        u8 keyY0x5[0x10] = {0x4D, 0x80, 0x4F, 0x4E, 0x99, 0x90, 0x19, 0x46, 0x13, 0xA2, 0x04, 0xAC, 0x58, 0x44, 0x60, 0xBE};
+        aes_setkey(0x05, keyY0x5, AES_KEYY, AES_INPUT_BE | AES_INPUT_NORMAL);
+        nandSlot = 0x05;
+        fatStart = 0x5CAD7;
+    }
+    else
+    {
+        nandSlot = 0x04;
+        fatStart = 0x5CAE5;
+    }
+}
+
+//Read and decrypt from CTRNAND
+u32 ctrNandRead(u32 sector, u32 sectorCount, u8 *outbuf)
+{
+    u8 tmpCTR[0x10];
+    memcpy(tmpCTR, nandCTR, 0x10);
+    aes_advctr(tmpCTR, ((sector + fatStart) * 0x200) / AES_BLOCK_SIZE, AES_INPUT_BE | AES_INPUT_NORMAL);
+
+    //Read
+    u32 result = sdmmc_nand_readsectors(sector + fatStart, sectorCount, outbuf);
+
+    //Decrypt
+    aes_use_keyslot(nandSlot);
+    aes(outbuf, outbuf, sectorCount * 0x200 / AES_BLOCK_SIZE, tmpCTR, AES_CTR_MODE, AES_INPUT_BE | AES_INPUT_NORMAL);
+
+    return result;
 }
 
 //Read and decrypt from the FIRM0 partition on NAND
-void readFirm0(u8 *outbuf, u32 size){
-    u8 CTRtmp[sizeof(CTR)];
-    memcpy(CTRtmp, CTR, sizeof(CTR));
+void readFirm0(u8 *outbuf, u32 size)
+{
+    u8 CTRtmp[0x10];
+    memcpy(CTRtmp, nandCTR, 0x10);
 
     //Read FIRM0 data
     sdmmc_nand_readsectors(0x0B130000 / 0x200, size / 0x200, outbuf);
@@ -301,10 +347,11 @@ void readFirm0(u8 *outbuf, u32 size){
 }
 
 //Encrypt and write a FIRM partition to NAND
-void writeFirm(u8 *inbuf, u32 firm, u32 size){
+void writeFirm(u8 *inbuf, u32 firm, u32 size)
+{
     u32 offset = firm ? 0x0B530000 : 0x0B130000;
-    u8 CTRtmp[sizeof(CTR)];
-    memcpy(CTRtmp, CTR, sizeof(CTR));
+    u8 CTRtmp[0x10];
+    memcpy(CTRtmp, nandCTR, 0x10);
 
     //Encrypt FIRM data
     aes_advctr(CTRtmp, offset / 0x10, AES_INPUT_BE | AES_INPUT_NORMAL);
@@ -316,7 +363,8 @@ void writeFirm(u8 *inbuf, u32 firm, u32 size){
 }
 
 //Setup keyslot 0x11 for key sector de/encryption
-void setupKeyslot0x11(u32 a9lhBoot, const void *otp){
+void setupKeyslot0x11(u32 a9lhBoot, const void *otp)
+{
     u8 shasum[0x20];
     u8 keyX[0x10];
     u8 keyY[0x10];
@@ -334,9 +382,10 @@ void setupKeyslot0x11(u32 a9lhBoot, const void *otp){
 }
 
 //Generate and encrypt an A9LH key sector
-void generateSector(u8 *keySector){
-    //Inject A9LH key2
-    memcpy(keySector + 0x10, a9lhKey2, 0x10);
+void generateSector(u8 *keySector, u32 mode)
+{
+    //Inject key2
+    memcpy(keySector + 0x10, mode ? key2s[0] : key2s[2], 0x10);
 
     //Encrypt key sector
     aes_use_keyslot(0x11);
@@ -345,7 +394,8 @@ void generateSector(u8 *keySector){
 }
 
 //Read and decrypt the NAND key sector
-void getSector(u8 *keySector){
+void getSector(u8 *keySector)
+{
     //Read keysector from NAND
     sdmmc_nand_readsectors(0x96, 1, keySector);
 
@@ -356,9 +406,29 @@ void getSector(u8 *keySector){
 }
 
 //Check SHA256 hash
-u32 verifyHash(const void *data, u32 size, const u8 *hash){
+u32 verifyHash(const void *data, u32 size, const u8 *hash)
+{
     u8 shasum[0x20];
     sha(shasum, data, size, SHA_256_MODE);
-    if(memcmp(shasum, hash, 0x20) != 0) return 0;
-    return 1;
+
+    return memcmp(shasum, hash, 0x20) == 0;
+}
+
+//Decrypt a FIRM ExeFS
+u32 decryptExeFs(u8 *inbuf)
+{
+    u8 *exeFsOffset = inbuf + *(u32 *)(inbuf + 0x1A0) * 0x200;
+    u32 exeFsSize = *(u32 *)(inbuf + 0x1A4) * 0x200;
+    u8 ncchCTR[0x10] = {0};
+
+    for(u32 i = 0; i < 8; i++)
+        ncchCTR[7 - i] = *(inbuf + 0x108 + i);
+    ncchCTR[8] = 2;
+
+    aes_setkey(0x2C, inbuf, AES_KEYY, AES_INPUT_BE | AES_INPUT_NORMAL);
+    aes_setiv(ncchCTR, AES_INPUT_BE | AES_INPUT_NORMAL);
+    aes_use_keyslot(0x2C);
+    aes(inbuf - 0x200, exeFsOffset, exeFsSize / AES_BLOCK_SIZE, ncchCTR, AES_CTR_MODE, AES_INPUT_BE | AES_INPUT_NORMAL);
+
+    return exeFsSize - 0x200;
 }

@@ -1,11 +1,19 @@
+/*
+*   screeninit.c
+*
+*   Screen init code by dark_samus, bil1s, Normmatt, delebile and others.
+*/
+
 #include "screeninit.h"
 #include "draw.h"
 #include "i2c.h"
 
-void initScreens(void){
+void initScreens(void)
+{
     vu32 *const arm11 = (u32 *)0x1FFFFFF8;
 
-    void __attribute__((naked)) ARM11(void){
+    void __attribute__((naked)) ARM11(void)
+    {
         __asm(".word 0xF10C01C0");
         *(vu32 *)0x10141200 = 0x1007F;
         *(vu32 *)0x10202014 = 0x00000001;
@@ -104,7 +112,8 @@ void initScreens(void){
         while(1);
     }
 
-    if(PDN_GPU_CNT == 0x1){
+    if(PDN_GPU_CNT == 1)
+    {
         *arm11 = (u32)ARM11;
         while(*arm11);
     }

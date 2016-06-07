@@ -4,3 +4,6 @@
 [submodule "CakeHax"]
 	path = CakeHax
 	url = https://github.com/mid-kid/CakeHax.git
+[submodule "2xrsa"]
+	path = 2xrsa
+	url = https://github.com/b1l1s/2xrsa.git
