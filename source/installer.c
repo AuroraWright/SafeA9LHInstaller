@@ -40,7 +40,7 @@ void main(void)
     initScreens();
 
     //Determine if booting with A9LH
-    u32 a9lhBoot = !PDN_SPI_CNT,
+    u32 a9lhBoot = !PDN_SPI_CNT;
     //Detect the console being used
     console = PDN_MPCORE_CFG == 7;
 

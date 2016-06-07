@@ -40,7 +40,10 @@ DSTATUS disk_initialize (
         static u32 sdmmcInited = 0;
 
         if(!sdmmcInited)
+        {
             sdmmc_sdcard_init();
+            sdmmcInited = 1;
+        }
 
         if(pdrv == CTRNAND)
             ctrNandInit();
