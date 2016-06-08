@@ -58,7 +58,8 @@ u32 firmRead(void *dest)
 
     f_opendir(&dir, path);
 
-    u32 id = 0xFFFFFFFF;
+    u32 id = 0xFFFFFFFF,
+        ret = 0;
 
     //Parse the target directory
     while(f_readdir(&dir, &info) == FR_OK && info.fname[0])
@@ -66,7 +67,8 @@ u32 firmRead(void *dest)
         //Not a cxi
         if(info.altname[9] != 'A') continue;
 
-        if(id != 0xFFFFFFFF) return 1;
+        //Multiple cxis were found
+        if(id != 0xFFFFFFFF) ret = 1;
 
         //Convert the .app name to an integer
         u32 tempId = 0;
@@ -76,7 +78,8 @@ u32 firmRead(void *dest)
             tempId += *tmp > '9' ? *tmp - 'A' + 10 : *tmp - '0';
         }
 
-        if((console && tempId >= 0x21) || (!console && tempId >= 0x52)) return 2;
+        //FIRM is equal or newer than 11.0
+        if(tempId >= (console ? 0x21 : 0x52)) ret = 2;
 
         //Found an older cxi
         if(tempId < id) id = tempId;
@@ -84,21 +87,24 @@ u32 firmRead(void *dest)
 
     f_closedir(&dir);
 
-    //Complete the string with the .app name
-    memcpy(&path[34], "/00000000.app", 14);
-
-    //Last digit of the .app
-    u32 i = 42;
-
-    //Convert back the .app name from integer to array
-    while(id)
+    if(!ret)
     {
-        static const char hexDigits[] = "0123456789ABCDEF";
-        path[i--] = hexDigits[id & 0xF];
-        id >>= 4;
+        //Complete the string with the .app name
+        memcpy(&path[34], "/00000000.app", 14);
+
+        //Last digit of the .app
+        u32 i = 42;
+
+        //Convert back the .app name from integer to array
+        while(id)
+        {
+            static const char hexDigits[] = "0123456789ABCDEF";
+            path[i--] = hexDigits[id & 0xF];
+            id >>= 4;
+        }
+
+        fileRead(dest, path);
     }
 
-    fileRead(dest, path);
-
-    return 0;
+    return ret;
 }
