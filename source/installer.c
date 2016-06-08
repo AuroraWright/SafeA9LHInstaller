@@ -59,7 +59,8 @@ void main(void)
 
 static inline void installer(u32 a9lhBoot)
 {
-    mountSD();
+    if(!mountSD())
+        shutdown(1, "Error: failed to mount the SD card");
 
     const char *path;
     u32 updatea9lh = 0;
@@ -192,7 +193,8 @@ static inline void uninstaller(void)
     }
     else memset32((void *)SECTOR_OFFSET, 0, 0x200);
 
-    mountCTRNAND();
+    if(!mountCTRNAND())
+        shutdown(1, "Error: failed to mount CTRNAND");
 
     switch(firmRead((void *)FIRM0_OFFSET))
     {

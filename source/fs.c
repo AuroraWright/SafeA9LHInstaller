@@ -10,14 +10,12 @@ static FATFS fs;
 
 u32 mountSD(void)
 {
-    if(f_mount(&fs, "0:", 1) != FR_OK) return 0;
-    return 1;
+    return f_mount(&fs, "0:", 1) == FR_OK;
 }
 
 u32 mountCTRNAND(void)
 {
-    if(f_mount(&fs, "1:", 1) != FR_OK) return 0;
-    return 1;
+    return f_mount(&fs, "1:", 1) == FR_OK;
 }
 
 u32 fileRead(void *dest, const char *path)
