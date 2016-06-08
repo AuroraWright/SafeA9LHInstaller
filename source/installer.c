@@ -31,7 +31,7 @@ static const u8 firm1Hash[0x20] = {
     0x2D, 0x3D, 0x56, 0x6C, 0x6A, 0x1A, 0x8E, 0x52, 0x54, 0xE3, 0x89, 0xC2, 0x95, 0x06, 0x23, 0xE5
 };
 
-int pos_y;
+int posY;
 
 u32 console;
 
@@ -46,9 +46,9 @@ void main(void)
     console = PDN_MPCORE_CFG == 7;
 
     drawString(TITLE, 10, 10, COLOR_TITLE);
-    pos_y = drawString("Thanks to delebile, #cakey and StandardBus", 10, 40, COLOR_WHITE);
-    pos_y = drawString(a9lhBoot ? "Press SELECT to update A9LH, START to uninstall" : "Press SELECT for a full install", 10, pos_y + SPACING_Y, COLOR_WHITE);
-    pos_y = drawString("Press any other button to shutdown", 10, pos_y, COLOR_WHITE);
+    posY = drawString("Thanks to delebile, #cakey and StandardBus", 10, 40, COLOR_WHITE);
+    posY = drawString(a9lhBoot ? "Press SELECT to update A9LH, START to uninstall" : "Press SELECT for a full install", 10, posY + SPACING_Y, COLOR_WHITE);
+    posY = drawString("Press any other button to shutdown", 10, posY, COLOR_WHITE);
 
     u32 pressed = waitInput();
     if(pressed == BUTTON_SELECT) installer(a9lhBoot);
@@ -156,7 +156,7 @@ static inline void installer(u32 a9lhBoot)
     if(!size || size > MAX_STAGE2_SIZE)
         shutdown(1, "Error: payload_stage2.bin doesn't exist or\nexceeds max size");
 
-    pos_y = drawString("All checks passed, installing...", 10, pos_y + SPACING_Y, COLOR_WHITE);
+    posY = drawString("All checks passed, installing...", 10, posY + SPACING_Y, COLOR_WHITE);
 
     //Point of no return, install stuff in the safest order
     sdmmc_nand_writesectors(0x5C000, 0x20, (vu8 *)STAGE2_OFFSET);
@@ -169,10 +169,10 @@ static inline void installer(u32 a9lhBoot)
 
 static inline void uninstaller(void)
 {
-    pos_y = drawString("You are about to uninstall A9LH!", 10, pos_y + 10, COLOR_RED);
-    pos_y = drawString("Doing this will require having 9.0 to reinstall!", 10, pos_y, COLOR_RED);
-    pos_y = drawString("If you would like to continue, press:", 10, pos_y, COLOR_WHITE);
-    pos_y = drawString("Up, Down, Left, Right, B, A, START, SELECT", 10, pos_y, COLOR_WHITE);
+    posY = drawString("You are about to uninstall A9LH!", 10, posY + 10, COLOR_RED);
+    posY = drawString("Doing this will require having 9.0 to reinstall!", 10, posY, COLOR_RED);
+    posY = drawString("If you would like to continue, press:", 10, posY, COLOR_WHITE);
+    posY = drawString("Up, Down, Left, Right, B, A, START, SELECT", 10, posY, COLOR_WHITE);
 
     u32 unlockSequence[] = { BUTTON_UP, BUTTON_DOWN, BUTTON_LEFT, BUTTON_RIGHT, BUTTON_B, BUTTON_A, BUTTON_START, BUTTON_SELECT },
         sequenceSize = sizeof(unlockSequence) / sizeof(u32);
@@ -183,6 +183,7 @@ static inline void uninstaller(void)
             shutdown(1, "Button sequence not entered correctly");
     }
 
+    //New 3DSes need a key sector with a proper key2, Old 3DSes have a blank key sector
     if(console)
     {
         setupKeyslot0x11(1, NULL);
@@ -196,6 +197,7 @@ static inline void uninstaller(void)
     if(!mountCTRNAND())
         shutdown(1, "Error: failed to mount CTRNAND");
 
+    //Read FIRM cxi from CTRNAND
     switch(firmRead((void *)FIRM0_OFFSET))
     {
         case 1:
@@ -207,17 +209,22 @@ static inline void uninstaller(void)
         default:
             break;
     }
+
+    //Decrypt it and get its size
     u32 firmSize = decryptExeFs((void *)FIRM0_OFFSET);
 
+    //writeFirm encrypts in-place, so we need two copies
     memcpy((void *)FIRM1_OFFSET, (void *)FIRM0_OFFSET, firmSize);
 
+    //Zero out the stage2 space on NAND
     memset32((void *)STAGE2_OFFSET, 0, MAX_STAGE2_SIZE);
 
-    pos_y = drawString("All checks passed, uninstalling...", 10, pos_y + SPACING_Y, COLOR_WHITE);
+    posY = drawString("All checks passed, uninstalling...", 10, posY + SPACING_Y, COLOR_WHITE);
 
+    //Point of no return, install stuff in the safest order
+    sdmmc_nand_writesectors(0x96, 1, (vu8 *)SECTOR_OFFSET);
     writeFirm((u8 *)FIRM0_OFFSET, 0, firmSize);
     writeFirm((u8 *)FIRM1_OFFSET, 1, firmSize);
-    sdmmc_nand_writesectors(0x96, 1, (vu8 *)SECTOR_OFFSET);
     sdmmc_nand_writesectors(0x5C000, 0x20, (vu8 *)STAGE2_OFFSET);
 
     shutdown(2, "Uninstall: success!");
