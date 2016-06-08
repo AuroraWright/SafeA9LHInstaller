@@ -168,12 +168,26 @@ static inline void installer(u32 a9lhBoot)
 
 static inline void uninstaller(void)
 {
+    pos_y = drawString("You are about to uninstall A9LH!", 10, pos_y + 10, COLOR_RED);
+    pos_y = drawString("Doing this will require having 9.0 to reinstall!", 10, pos_y, COLOR_RED);
+    pos_y = drawString("If you would like to continue, press:", 10, pos_y, COLOR_WHITE);
+    pos_y = drawString("Up, Down, Left, Right, B, A, START, SELECT", 10, pos_y, COLOR_WHITE);
+
+    u32 unlockSequence[] = { BUTTON_UP, BUTTON_DOWN, BUTTON_LEFT, BUTTON_RIGHT, BUTTON_B, BUTTON_A, BUTTON_START, BUTTON_SELECT },
+        sequenceSize = sizeof(unlockSequence) / sizeof(u32);
+
+    for(u32 correctPresses = 0; correctPresses < sequenceSize; correctPresses++)
+    {
+        if(waitInput() != unlockSequence[correctPresses])
+            shutdown(1, "Button sequence not entered correctly");
+    }
+
     if(console)
     {
         setupKeyslot0x11(1, NULL);
         getSector((u8 *)SECTOR_OFFSET);
         if(memcmp((void *)(SECTOR_OFFSET + 0x10), key2s[1], 0x10) != 0 && memcmp((void *)(SECTOR_OFFSET + 0x10), key2s[2], 0x10) != 0)
-            shutdown(1, "Error: incorrect NAND keystore");
+            shutdown(1, "Error: the OTP hash or the NAND key sector\nare invalid");
         generateSector((u8 *)SECTOR_OFFSET, 1);
     }
     else memset32((void *)SECTOR_OFFSET, 0, 0x200);
@@ -186,7 +200,7 @@ static inline void uninstaller(void)
             shutdown(1, "Error: more than one FIRM cxi has been detected");
             break;
         case 2:
-            shutdown(1, "Error: a FIRM equal or newer than 11.0\n has been detected");
+            shutdown(1, "Error: a FIRM equal or newer than 11.0\nhas been detected");
             break;
         default:
             break;
