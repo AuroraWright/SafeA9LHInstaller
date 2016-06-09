@@ -72,7 +72,7 @@ static inline void installer(u32 a9lhBoot)
         path = "a9lh/otp.bin";
         if(fileRead((void *)OTP_OFFSET, path) != 256)
         {
-            u8 zeroes[256] = {0};
+            const u8 zeroes[256] = {0};
             if(memcmp((void *)OTP_FROM_MEM, zeroes, 256) == 0)
                 shutdown(1, "Error: otp.bin doesn't exist and can't be dumped");
 
@@ -148,6 +148,10 @@ static inline void installer(u32 a9lhBoot)
     u32 size = fileRead((void *)STAGE1_OFFSET, path);
     if(!size || size > MAX_STAGE1_SIZE)
         shutdown(1, "Error: payload_stage1.bin doesn't exist or\nexceeds max size");
+
+    const u8 zeroes[688] = {0};
+    if(memcmp(zeroes, (void *)STAGE1_OFFSET, 688) == 0)
+        shutdown(1, "Error: the payload_stage1.bin you're attempting\nto install is not compatible");
 
     //Read stage2
     memset32((void *)STAGE2_OFFSET, 0, MAX_STAGE2_SIZE);
