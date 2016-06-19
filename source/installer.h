@@ -21,7 +21,7 @@
 #define STAGE1_OFFSET     FIRM0_OFFSET + STAGE1_POSITION
 #define STAGE2_OFFSET     0x24400000
 #define MAX_STAGE1_SIZE   0x1E70
-#define MAX_STAGE2_SIZE   0x2800
+#define MAX_STAGE2_SIZE   0x89A00
 
 static inline void installer(u32 a9lhBoot);
 static inline void uninstaller(void);
