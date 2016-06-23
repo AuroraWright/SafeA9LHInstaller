@@ -163,7 +163,7 @@ static inline void installer(u32 a9lhBoot)
     posY = drawString("All checks passed, installing...", 10, posY + SPACING_Y, COLOR_WHITE);
 
     //Point of no return, install stuff in the safest order
-    sdmmc_nand_writesectors(0x5C000, 0x20, (vu8 *)STAGE2_OFFSET);
+    sdmmc_nand_writesectors(0x5C000, MAX_STAGE2_SIZE / 0x200, (vu8 *)STAGE2_OFFSET);
     if(!a9lhBoot) writeFirm((u8 *)FIRM1_OFFSET, 1, FIRM1_SIZE);
     if(!a9lhBoot || updatea9lh) sdmmc_nand_writesectors(0x96, 1, (vu8 *)SECTOR_OFFSET);
     writeFirm((u8 *)FIRM0_OFFSET, 0, FIRM0_SIZE);
@@ -229,7 +229,7 @@ static inline void uninstaller(void)
     sdmmc_nand_writesectors(0x96, 1, (vu8 *)SECTOR_OFFSET);
     writeFirm((u8 *)FIRM0_OFFSET, 0, firmSize);
     writeFirm((u8 *)FIRM1_OFFSET, 1, firmSize);
-    sdmmc_nand_writesectors(0x5C000, 0x20, (vu8 *)STAGE2_OFFSET);
+    sdmmc_nand_writesectors(0x5C000, MAX_STAGE2_SIZE / 0x200, (vu8 *)STAGE2_OFFSET);
 
     shutdown(2, "Uninstall: success!");
 }
