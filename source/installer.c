@@ -68,14 +68,20 @@ static inline void installer(u32 a9lhBoot)
     //If making a first install, we need the OTP
     if(!a9lhBoot)
     {
-        //Read OTP
+        // Prefer OTP from memory if available
+        const u8 zeroes[256] = {0};
         path = "a9lh/otp.bin";
-        if(fileRead((void *)OTP_OFFSET, path) != 256)
+        if(memcmp((void *)OTP_FROM_MEM, zeroes, 256) == 0)
         {
-            const u8 zeroes[256] = {0};
-            if(memcmp((void *)OTP_FROM_MEM, zeroes, 256) == 0)
-                shutdown(1, "Error: otp.bin doesn't exist and can't be dumped");
-
+            // Read OTP from file
+            if(fileRead((void *)OTP_OFFSET, path) != 256)
+            {
+                shutdown(1, "Error: otp.bin doesn't exist and can't be dumped");            
+            }
+        }
+        else
+        {
+            // Write OTP from memory to file
             fileWrite((void *)OTP_FROM_MEM, path, 256);
             memcpy((void *)OTP_OFFSET, (void *)OTP_FROM_MEM, 256);
         }
