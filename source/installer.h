@@ -6,8 +6,8 @@
 
 #include "types.h"
 
-#define PDN_MPCORE_CFG     (*(vu8 *)0x10140FFC)
-#define PDN_SPI_CNT        (*(vu8 *)0x101401C0)
+#define PDN_MPCORE_CFG (*(vu8 *)0x10140FFC)
+#define PDN_SPI_CNT    (*(vu8 *)0x101401C0)
 
 #define OTP_FROM_MEM      0x10012000
 #define OTP_OFFSET        0x24000000
@@ -23,5 +23,5 @@
 #define MAX_STAGE1_SIZE   0x1E70
 #define MAX_STAGE2_SIZE   0x89A00
 
-static inline void installer(u32 a9lhBoot);
+static inline void installer(bool isA9lh);
 static inline void uninstaller(void);

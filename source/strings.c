@@ -20,14 +20,36 @@
 *   Notices displayed by works containing it.
 */
 
-#pragma once
+#include "strings.h"
+#include "memory.h"
 
-#include "types.h"
+u32 strlen(const char *string)
+{
+    char *stringEnd = (char *)string;
 
-extern bool isN3DS;
+    while(*stringEnd) stringEnd++;
 
-u32 mountSD(void);
-u32 mountCTRNAND(void);
-u32 fileRead(void *dest, const char *path, u32 maxSize);
-bool fileWrite(const void *buffer, const char *path, u32 size);
-u32 firmRead(void *dest);
+    return stringEnd - string;
+}
+
+void concatenateStrings(char *destination, const char *source)
+{
+    u32 i = strlen(source),
+        j = strlen(destination);
+
+    memcpy(&destination[j], source, i + 1);
+}
+
+void hexItoa(u32 number, char *out, u32 digits)
+{
+    const char hexDigits[] = "0123456789ABCDEF";
+    u32 i = 0;
+
+    while(number > 0)
+    {
+        out[digits - 1 - i++] = hexDigits[number & 0xF];
+        number >>= 4;
+    }
+
+    while(i < digits) out[digits - 1 - i++] = '0';
+}

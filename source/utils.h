@@ -21,7 +21,7 @@
 #define COLOR_RED   0x0000FF
 #define COLOR_GREEN 0x00FF00
 
-extern int posY;
+extern u32 posY;
 
 u32 waitInput(void);
 void shutdown(u32 mode, const char *message);

@@ -24,10 +24,6 @@
 
 #include "types.h"
 
-extern bool isN3DS;
-
-u32 mountSD(void);
-u32 mountCTRNAND(void);
-u32 fileRead(void *dest, const char *path, u32 maxSize);
-bool fileWrite(const void *buffer, const char *path, u32 size);
-u32 firmRead(void *dest);
+u32 strlen(const char *string);
+void concatenateStrings(char *destination, const char *source);
+void hexItoa(u32 number, char *out, u32 digits);

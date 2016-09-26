@@ -20,14 +20,30 @@
 *   Notices displayed by works containing it.
 */
 
+/*
+*   Screen init code by dark_samus, bil1s, Normmatt, delebile and others
+*/
+
 #pragma once
 
 #include "types.h"
 
-extern bool isN3DS;
+#define PDN_GPU_CNT (*(vu8 *)0x10141200)
 
-u32 mountSD(void);
-u32 mountCTRNAND(void);
-u32 fileRead(void *dest, const char *path, u32 maxSize);
-bool fileWrite(const void *buffer, const char *path, u32 size);
-u32 firmRead(void *dest);
+#define BRAHMA_ARM11_ENTRY 0x1FFFFFF8
+#define WAIT_FOR_ARM9()    *arm11Entry = 0; while(!*arm11Entry); ((void (*)())*arm11Entry)();
+
+#define SCREEN_TOP_WIDTH     400
+#define SCREEN_BOTTOM_WIDTH  320
+#define SCREEN_HEIGHT        240
+#define SCREEN_TOP_FBSIZE    (3 * SCREEN_TOP_WIDTH * SCREEN_HEIGHT)
+#define SCREEN_BOTTOM_FBSIZE (3 * SCREEN_BOTTOM_WIDTH * SCREEN_HEIGHT)
+
+static struct fb {
+    u8 *top_left;
+    u8 *top_right;
+    u8 *bottom;
+} *const fb = (struct fb *)0x23FFFE00;
+
+void clearScreens(void);
+void initScreens(void);

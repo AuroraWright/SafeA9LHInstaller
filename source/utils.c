@@ -4,12 +4,14 @@
 
 #include "utils.h"
 #include "draw.h"
+#include "screen.h"
+#include "cache.h"
 #include "i2c.h"
 
 u32 waitInput(void)
 {
-    u32 pressedKey = 0,
-        key;
+    bool pressedKey = false;
+    u32 key;
 
     //Wait for no keys to be pressed
     while(HID_PAD);
@@ -22,10 +24,10 @@ u32 waitInput(void)
         key = HID_PAD;
 
         //Make sure it's pressed
-        for(u32 i = 0x13000; i; i--)
+        for(u32 i = 0x13000; i > 0; i--)
         {
             if(key != HID_PAD) break;
-            if(i == 1) pressedKey = 1;
+            if(i == 1) pressedKey = true;
         }
     }
     while(!pressedKey);
@@ -41,6 +43,9 @@ void shutdown(u32 mode, const char *message)
         drawString("Press any button to shutdown", 10, posY, COLOR_WHITE);
         waitInput();
     }
-    i2cWriteRegister(I2C_DEV_MCU, 0x20, 1);
-    while(1);
+
+    if(PDN_GPU_CNT != 1) clearScreens();
+    flushEntireDCache();
+    i2cWriteRegister(I2C_DEV_MCU, 0x20, 1 << 0);
+    while(true);
 }

@@ -82,7 +82,7 @@ $(dir_build)/main.bin: $(dir_build)/main.elf
 $(dir_build)/main.elf: $(objects)
 	$(LINK.o) -T linker.ld $(OUTPUT_OPTION) $^
 
-$(dir_build)/memory.o:    CFLAGS += -O3
+$(dir_build)/memory.o $(dir_build)/strings.o: CFLAGS += -O3
 $(dir_build)/installer.o: CFLAGS += -DTITLE="\"$(name) $(revision)\""
 
 $(dir_build)/%.o: $(dir_source)/%.c

@@ -6,7 +6,7 @@
 #include "memory.h"
 #include "fs.h"
 #include "crypto.h"
-#include "screeninit.h"
+#include "screen.h"
 #include "draw.h"
 #include "utils.h"
 #include "fatfs/sdmmc/sdmmc.h"
@@ -31,9 +31,8 @@ static const u8 firm1Hash[0x20] = {
     0x2D, 0x3D, 0x56, 0x6C, 0x6A, 0x1A, 0x8E, 0x52, 0x54, 0xE3, 0x89, 0xC2, 0x95, 0x06, 0x23, 0xE5
 };
 
-int posY;
-
-u32 console;
+u32 posY;
+bool isN3DS;
 
 void main(void)
 {
@@ -41,54 +40,54 @@ void main(void)
     sdmmc_sdcard_init();
 
     //Determine if booting with A9LH
-    u32 a9lhBoot = !PDN_SPI_CNT;
+    bool isA9lh = !PDN_SPI_CNT;
+
     //Detect the console being used
-    console = PDN_MPCORE_CFG == 7;
+    isN3DS = PDN_MPCORE_CFG == 7;
 
     drawString(TITLE, 10, 10, COLOR_TITLE);
     posY = drawString("Thanks to delebile, #cakey and StandardBus", 10, 40, COLOR_WHITE);
-    posY = drawString(a9lhBoot ? "Press SELECT to update A9LH, START to uninstall" : "Press SELECT for a full install", 10, posY + SPACING_Y, COLOR_WHITE);
+    posY = drawString(isA9lh ? "Press SELECT to update A9LH, START to uninstall" : "Press SELECT for a full install", 10, posY + SPACING_Y, COLOR_WHITE);
     posY = drawString("Press any other button to shutdown", 10, posY, COLOR_WHITE);
 
     u32 pressed = waitInput();
-    if(pressed == BUTTON_SELECT) installer(a9lhBoot);
-    if(pressed == BUTTON_START && a9lhBoot) uninstaller();
+
+    if(pressed == BUTTON_SELECT) installer(isA9lh);
+    if(pressed == BUTTON_START && isA9lh) uninstaller();
 
     shutdown(0, NULL);
 }
 
-static inline void installer(u32 a9lhBoot)
+static inline void installer(bool isA9lh)
 {
     if(!mountSD())
         shutdown(1, "Error: failed to mount the SD card");
 
-    const char *path;
-    u32 updatea9lh = 0;
+    bool updateA9lh = false;
 
     //If making a first install, we need the OTP
-    if(!a9lhBoot)
+    if(!isA9lh)
     {
-        // Prefer OTP from memory if available
+        const char otpPath[] = "a9lh/otp.bin";
         const u8 zeroes[256] = {0};
-        path = "a9lh/otp.bin";
+
+        //Prefer OTP from memory if available
         if(memcmp((void *)OTP_FROM_MEM, zeroes, 256) == 0)
         {
             // Read OTP from file
-            if(fileRead((void *)OTP_OFFSET, path) != 256)
-            {
-                shutdown(1, "Error: otp.bin doesn't exist and can't be dumped");            
-            }
+            if(!fileRead((void *)OTP_OFFSET, otpPath, 256))
+                shutdown(1, "Error: otp.bin doesn't exist and can't be dumped");
         }
         else
         {
-            // Write OTP from memory to file
-            fileWrite((void *)OTP_FROM_MEM, path, 256);
+            //Write OTP from memory to file
+            fileWrite((void *)OTP_FROM_MEM, otpPath, 256);
             memcpy((void *)OTP_OFFSET, (void *)OTP_FROM_MEM, 256);
         }
     }
 
     //Setup the key sector de/encryption with the SHA register or otp.bin
-    setupKeyslot0x11(a9lhBoot, (void *)OTP_OFFSET);
+    setupKeyslot0x11(isA9lh, (void *)OTP_OFFSET);
 
     //Calculate the CTR for the 3DS partitions
     getNandCTR();
@@ -99,7 +98,7 @@ static inline void installer(u32 a9lhBoot)
         shutdown(1, "Error: failed to setup FIRM encryption");
 
     //If booting from A9LH or on N3DS, we can use the key sector from NAND
-    if(a9lhBoot || console)
+    if(isA9lh || isN3DS)
     {
          getSector((u8 *)SECTOR_OFFSET);
 
@@ -107,28 +106,26 @@ static inline void installer(u32 a9lhBoot)
          for(i = 0; i < 3; i++)
              if(memcmp((void *)(SECTOR_OFFSET + 0x10), key2s[i], 0x10) == 0) break;
 
-         if(i == 3) shutdown(1, a9lhBoot ? "Error: the OTP hash or the NAND key sector\nare invalid" :
+         if(i == 3) shutdown(1, isA9lh ? "Error: the OTP hash or the NAND key sector\nare invalid" :
                                            "Error: the otp.bin or the NAND key sector\nare invalid");
-         else if(i == 1) updatea9lh = 1;
+         else if(i == 1) updateA9lh = true;
     }
     else
     {
          //Read decrypted key sector
-         path = "a9lh/secret_sector.bin";
-         if(fileRead((void *)SECTOR_OFFSET, path) != 0x200)
+         if(!fileRead((void *)SECTOR_OFFSET, "a9lh/secret_sector.bin", 0x200))
              shutdown(1, "Error: secret_sector.bin doesn't exist or has\na wrong size");
          if(!verifyHash((void *)SECTOR_OFFSET, 0x200, sectorHash))
              shutdown(1, "Error: secret_sector.bin is invalid or corrupted");
     }
 
-    if(!a9lhBoot || updatea9lh)
+    if(!isA9lh || updateA9lh)
     {
         //Generate and encrypt a per-console A9LH key sector
         generateSector((u8 *)SECTOR_OFFSET, 0);
 
         //Read FIRM0
-        path = "a9lh/firm0.bin";
-        if(fileRead((void *)FIRM0_OFFSET, path) != FIRM0_SIZE)
+        if(!fileRead((void *)FIRM0_OFFSET, "a9lh/firm0.bin", FIRM0_SIZE))
             shutdown(1, "Error: firm0.bin doesn't exist or has a wrong size");
 
         if(!verifyHash((void *)FIRM0_OFFSET, FIRM0_SIZE, firm0Hash))
@@ -137,11 +134,10 @@ static inline void installer(u32 a9lhBoot)
     else if(!verifyHash((void *)FIRM0_OFFSET, SECTION2_POSITION, firm0A9lhHash))
         shutdown(1, "Error: NAND FIRM0 is invalid");
 
-    if(!a9lhBoot)
+    if(!isA9lh)
     {
         //Read FIRM1
-        path = "a9lh/firm1.bin";
-        if(fileRead((void *)FIRM1_OFFSET, path) != FIRM1_SIZE)
+        if(!fileRead((void *)FIRM1_OFFSET, "a9lh/firm1.bin", FIRM1_SIZE))
             shutdown(1, "Error: firm1.bin doesn't exist or has a wrong size");
 
         if(!verifyHash((void *)FIRM1_OFFSET, FIRM1_SIZE, firm1Hash))
@@ -150,9 +146,7 @@ static inline void installer(u32 a9lhBoot)
 
     //Inject stage1
     memset32((void *)STAGE1_OFFSET, 0, MAX_STAGE1_SIZE);
-    path = "a9lh/payload_stage1.bin";
-    u32 size = fileRead((void *)STAGE1_OFFSET, path);
-    if(!size || size > MAX_STAGE1_SIZE)
+    if(!fileRead((void *)STAGE1_OFFSET, "a9lh/payload_stage1.bin", MAX_STAGE1_SIZE))
         shutdown(1, "Error: payload_stage1.bin doesn't exist or\nexceeds max size");
 
     const u8 zeroes[688] = {0};
@@ -161,20 +155,18 @@ static inline void installer(u32 a9lhBoot)
 
     //Read stage2
     memset32((void *)STAGE2_OFFSET, 0, MAX_STAGE2_SIZE);
-    path = "a9lh/payload_stage2.bin";
-    size = fileRead((void *)STAGE2_OFFSET, path);
-    if(!size || size > MAX_STAGE2_SIZE)
+    if(!fileRead((void *)STAGE2_OFFSET, "a9lh/payload_stage2.bin", MAX_STAGE2_SIZE))
         shutdown(1, "Error: payload_stage2.bin doesn't exist or\nexceeds max size");
 
     posY = drawString("All checks passed, installing...", 10, posY + SPACING_Y, COLOR_WHITE);
 
     //Point of no return, install stuff in the safest order
-    sdmmc_nand_writesectors(0x5C000, MAX_STAGE2_SIZE / 0x200, (vu8 *)STAGE2_OFFSET);
-    if(!a9lhBoot) writeFirm((u8 *)FIRM1_OFFSET, 1, FIRM1_SIZE);
-    if(!a9lhBoot || updatea9lh) sdmmc_nand_writesectors(0x96, 1, (vu8 *)SECTOR_OFFSET);
-    writeFirm((u8 *)FIRM0_OFFSET, 0, FIRM0_SIZE);
+    sdmmc_nand_writesectors(0x5C000, MAX_STAGE2_SIZE / 0x200, (u8 *)STAGE2_OFFSET);
+    if(!isA9lh) writeFirm((u8 *)FIRM1_OFFSET, true, FIRM1_SIZE);
+    if(!isA9lh || updateA9lh) sdmmc_nand_writesectors(0x96, 1, (u8 *)SECTOR_OFFSET);
+    writeFirm((u8 *)FIRM0_OFFSET, false, FIRM0_SIZE);
 
-    shutdown(2, a9lhBoot ? "Update: success!" : "Full install: success!");
+    shutdown(2, isA9lh ? "Update: success!" : "Full install: success!");
 }
 
 static inline void uninstaller(void)
@@ -194,7 +186,7 @@ static inline void uninstaller(void)
     }
 
     //New 3DSes need a key sector with a proper key2, Old 3DSes have a blank key sector
-    if(console)
+    if(isN3DS)
     {
         setupKeyslot0x11(1, NULL);
         getSector((u8 *)SECTOR_OFFSET);
@@ -232,10 +224,10 @@ static inline void uninstaller(void)
     posY = drawString("All checks passed, uninstalling...", 10, posY + SPACING_Y, COLOR_WHITE);
 
     //Point of no return, install stuff in the safest order
-    sdmmc_nand_writesectors(0x96, 1, (vu8 *)SECTOR_OFFSET);
-    writeFirm((u8 *)FIRM0_OFFSET, 0, firmSize);
-    writeFirm((u8 *)FIRM1_OFFSET, 1, firmSize);
-    sdmmc_nand_writesectors(0x5C000, MAX_STAGE2_SIZE / 0x200, (vu8 *)STAGE2_OFFSET);
+    sdmmc_nand_writesectors(0x96, 1, (u8 *)SECTOR_OFFSET);
+    writeFirm((u8 *)FIRM0_OFFSET, false, firmSize);
+    writeFirm((u8 *)FIRM1_OFFSET, true, firmSize);
+    sdmmc_nand_writesectors(0x5C000, MAX_STAGE2_SIZE / 0x200, (u8 *)STAGE2_OFFSET);
 
     shutdown(2, "Uninstall: success!");
 }
