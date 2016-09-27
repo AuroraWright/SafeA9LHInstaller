@@ -275,13 +275,14 @@ static void sha(void *res, const void *src, u32 size, u32 mode)
 static u8 __attribute__((aligned(4))) nandCtr[AES_BLOCK_SIZE];
 static u8 nandSlot;
 static u32 fatStart;
-const u8 __attribute__((aligned(4))) key2s[3][AES_BLOCK_SIZE] = {
+const u8 __attribute__((aligned(4))) key2s[4][AES_BLOCK_SIZE] = {
     {0x42, 0x3F, 0x81, 0x7A, 0x23, 0x52, 0x58, 0x31, 0x6E, 0x75, 0x8E, 0x3A, 0x39, 0x43, 0x2E, 0xD0},
     {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x3B, 0xF5, 0xF6},
-    {0x65, 0x29, 0x3E, 0x12, 0x56, 0x0C, 0x0B, 0xD1, 0xDD, 0xB5, 0x63, 0x1C, 0xB6, 0xD9, 0x52, 0x75}
+    {0x65, 0x29, 0x3E, 0x12, 0x56, 0x0C, 0x0B, 0xD1, 0xDD, 0xB5, 0x63, 0x1C, 0xB6, 0xD9, 0x52, 0x75},
+    {0x07, 0x29, 0x44, 0x38, 0xF8, 0xC9, 0x75, 0x93, 0xAA, 0x0E, 0x4A, 0xB4, 0xAE, 0x84, 0xC1, 0xD8}
 };
 
-void getNandCTR(void)
+void getNandCtr(void)
 {
     u8 __attribute__((aligned(4))) cid[AES_BLOCK_SIZE];
     u8 __attribute__((aligned(4))) shaSum[SHA_256_HASH_SIZE];
@@ -293,7 +294,7 @@ void getNandCTR(void)
 
 void ctrNandInit(void)
 {
-    getNandCTR();
+    getNandCtr();
 
     if(isN3DS)
     {
@@ -355,7 +356,7 @@ void writeFirm(u8 *inbuf, bool isFirm1, u32 size)
     sdmmc_nand_writesectors(offset / 0x200, size / 0x200, inbuf);
 }
 
-void setupKeyslot0x11(bool isA9lh, const void *otp)
+void setupKeyslot0x11(const void *otp, bool isA9lh)
 {
     u8 __attribute__((aligned(4))) shasum[SHA_256_HASH_SIZE];
     u8 __attribute__((aligned(4))) keyX[AES_BLOCK_SIZE];
@@ -377,23 +378,31 @@ void setupKeyslot0x11(bool isA9lh, const void *otp)
 void generateSector(u8 *keySector, u32 mode)
 {
     //Inject key2
-    memcpy(keySector + AES_BLOCK_SIZE, mode ? key2s[0] : key2s[2], AES_BLOCK_SIZE);
+    if(mode == 0) memcpy(keySector + AES_BLOCK_SIZE, key2s[2], AES_BLOCK_SIZE);
+    else if(mode == 1) memcpy(keySector + AES_BLOCK_SIZE, keySector, AES_BLOCK_SIZE);
+    else memcpy(keySector + AES_BLOCK_SIZE, key2s[0], AES_BLOCK_SIZE);
 
-    //Encrypt key sector
-    aes_use_keyslot(0x11);
-    for(u32 i = 0; i < 32; i++)
-        aes(keySector + (AES_BLOCK_SIZE * i), keySector + (AES_BLOCK_SIZE * i), 1, NULL, AES_ECB_ENCRYPT_MODE, 0);
+    if(mode != 1)
+    {
+        //Encrypt key sector
+        aes_use_keyslot(0x11);
+        for(u32 i = 0; i < 32; i++)
+            aes(keySector + (AES_BLOCK_SIZE * i), keySector + (AES_BLOCK_SIZE * i), 1, NULL, AES_ECB_ENCRYPT_MODE, 0);
+    }
 }
 
-void getSector(u8 *keySector)
+void getSector(u8 *keySector, bool isA9lh)
 {
     //Read keysector from NAND
     sdmmc_nand_readsectors(0x96, 1, keySector);
 
-    //Decrypt key sector
-    aes_use_keyslot(0x11);
-    for(u32 i = 0; i < 32; i++)
-        aes(keySector + (AES_BLOCK_SIZE * i), keySector + (AES_BLOCK_SIZE * i), 1, NULL, AES_ECB_DECRYPT_MODE, 0);
+    if(isA9lh)
+    {
+        //Decrypt key sector
+        aes_use_keyslot(0x11);
+        for(u32 i = 0; i < 32; i++)
+            aes(keySector + (AES_BLOCK_SIZE * i), keySector + (AES_BLOCK_SIZE * i), 1, NULL, AES_ECB_DECRYPT_MODE, 0);
+    }
 }
 
 u32 verifyHash(const void *data, u32 size, const u8 *hash)

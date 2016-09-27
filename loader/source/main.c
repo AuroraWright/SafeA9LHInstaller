@@ -20,14 +20,34 @@
 *   Notices displayed by works containing it.
 */
 
-#pragma once
+#include "cache.h"
+#include "memory.h"
+#include "../build/bundled.h"
 
-#include "types.h"
+#define A11_PAYLOAD_LOC 0x1FFF4C80 //Keep in mind this needs to be changed in the ld script for arm11 too
+#define A11_ENTRYPOINT  0x1FFFFFF8
 
-extern bool isN3DS;
+static inline void ownArm11(void)
+{
+    memcpy((void *)A11_PAYLOAD_LOC, arm11_bin, arm11_bin_size);
 
-bool mountSd(void);
-bool mountCtrNand(void);
-u32 fileRead(void *dest, const char *path, u32 maxSize);
-bool fileWrite(const void *buffer, const char *path, u32 size);
-u32 firmRead(void *dest);
+    *(vu32 *)A11_ENTRYPOINT = 1;
+    *(vu32 *)0x1FFAED80 = 0xE51FF004;
+    *(vu32 *)0x1FFAED84 = A11_PAYLOAD_LOC;
+    *(vu8 *)0x1FFFFFF0 = 2;
+    while(*(vu32 *)A11_ENTRYPOINT);
+}
+
+void main(void)
+{
+    ownArm11();
+
+    vu32 *magic = (vu32 *)0x25000000;
+    magic[0] = 0xABADCAFE;
+    magic[1] = 0xDEADCAFE;
+
+    //Ensure that all memory transfers have completed and that the caches have been flushed
+    flushCaches();
+
+    ((void (*)())0x23F00000)();
+}

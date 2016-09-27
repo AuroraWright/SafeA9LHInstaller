@@ -24,10 +24,4 @@
 
 #include "types.h"
 
-extern bool isN3DS;
-
-bool mountSd(void);
-bool mountCtrNand(void);
-u32 fileRead(void *dest, const char *path, u32 maxSize);
-bool fileWrite(const void *buffer, const char *path, u32 size);
-u32 firmRead(void *dest);
+void flushCaches(void);

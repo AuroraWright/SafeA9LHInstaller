@@ -35,7 +35,6 @@
 */
 
 #include "screen.h"
-#include "draw.h"
 #include "cache.h"
 #include "i2c.h"
 
@@ -92,8 +91,8 @@ void initScreens(void)
         *(vu32 *)0x10141200 = 0x1007F;
         *(vu32 *)0x10202014 = 0x00000001;
         *(vu32 *)0x1020200C &= 0xFFFEFFFE;
-        *(vu32 *)0x10202240 = 0x45;
-        *(vu32 *)0x10202A40 = 0x45;
+        *(vu32 *)0x10202240 = 0x4C;
+        *(vu32 *)0x10202A40 = 0x4C;
         *(vu32 *)0x10202244 = 0x1023E;
         *(vu32 *)0x10202A44 = 0x1023E;
 
@@ -188,22 +187,16 @@ void initScreens(void)
         WAIT_FOR_ARM9();
     }
 
-    static bool needToSetup = true;
-
-    if(needToSetup)
+    if(PDN_GPU_CNT == 1)
     {
-        if(PDN_GPU_CNT == 1)
-        {
-            invokeArm11Function(initSequence);
+        invokeArm11Function(initSequence);
 
-            //Turn on backlight
-            i2cWriteRegister(I2C_DEV_MCU, 0x22, 0x2A);
-        }
-
-        flushDCacheRange((void *)fb, sizeof(struct fb));
-        invokeArm11Function(setupFramebuffers);
-        needToSetup = false;
+        //Turn on backlight
+        i2cWriteRegister(I2C_DEV_MCU, 0x22, 0x2A);
     }
+
+    flushDCacheRange((void *)fb, sizeof(struct fb));
+    invokeArm11Function(setupFramebuffers);
 
     clearScreens();
 }

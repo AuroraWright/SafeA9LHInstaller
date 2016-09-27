@@ -27,12 +27,12 @@
 
 static FATFS fs;
 
-u32 mountSD(void)
+bool mountSd(void)
 {
     return f_mount(&fs, "0:", 1) == FR_OK;
 }
 
-u32 mountCTRNAND(void)
+bool mountCtrNand(void)
 {
     return f_mount(&fs, "1:", 1) == FR_OK;
 }
@@ -45,9 +45,8 @@ u32 fileRead(void *dest, const char *path, u32 maxSize)
     if(f_open(&file, path, FA_READ) == FR_OK)
     {
         u32 size = f_size(&file);
-        if(dest == NULL) ret = size;
-        else if(!(maxSize > 0 && size > maxSize))
-            f_read(&file, dest, size, (unsigned int *)&ret);
+        if(!(size > maxSize))
+            f_read(&file, dest, size, (unsigned int *)ret);
         f_close(&file);
     }
 
@@ -64,6 +63,7 @@ bool fileWrite(const void *buffer, const char *path, u32 size)
     {
         unsigned int written;
         f_write(&file, buffer, size, &written);
+        f_truncate(&file);
         f_close(&file);
 
         return true;

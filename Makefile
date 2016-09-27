@@ -9,9 +9,9 @@ name := SafeA9LHInstaller
 revision := $(shell git describe --tags --match v[0-9]* --abbrev=8 | sed 's/-[0-9]*-g/-/i')
 
 dir_source := source
-dir_mset := CakeHax
-dir_ninjhax := CakeBrah
-dir_2xrsa := 2xrsa
+dir_loader := loader
+dir_cakehax := CakeHax
+dir_cakebrah := CakeBrah
 dir_build := build
 dir_out := out
 
@@ -24,63 +24,65 @@ objects= $(patsubst $(dir_source)/%.s, $(dir_build)/%.o, \
          $(patsubst $(dir_source)/%.c, $(dir_build)/%.o, \
 	 $(call rwildcard, $(dir_source), *.s *.c)))
 
+bundled = $(dir_build)/loader.bin.o
+
+define bin2o
+	bin2s $< | $(AS) -o $(@)
+	echo "extern const u8" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"[];" >> $(dir_build)/bundled.h
+	echo "extern const u32" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`_size";" >> $(dir_build)/bundled.h
+endef
+
 .PHONY: all
-all: launcher a9lh ninjhax 2xrsa
+all: launcher a9lh cakebrah
 
 .PHONY: launcher
-launcher: $(dir_out)/$(name).dat 
+launcher: $(dir_out)/$(name).dat
 
 .PHONY: a9lh
 a9lh: $(dir_out)/arm9loaderhax.bin
 
-.PHONY: 2xrsa
-2xrsa: $(dir_out)/arm9.bin $(dir_out)/arm11.bin
-
-.PHONY: ninjhax
-ninjhax: $(dir_out)/3ds/$(name)
+.PHONY: cakebrah
+cakebrah: $(dir_out)/3ds/$(name)
 
 .PHONY: release
 release: $(dir_out)/$(name)$(revision).7z
 
 .PHONY: clean
 clean:
-	@$(MAKE) $(FLAGS) -C $(dir_mset) clean
-	@$(MAKE) $(FLAGS) -C $(dir_ninjhax) clean
-	@$(MAKE) -C $(dir_2xrsa) clean
+	@$(MAKE) -C $(dir_loader) clean
+	@$(MAKE) $(FLAGS) -C $(dir_cakehax) clean
+	@$(MAKE) $(FLAGS) -C $(dir_cakebrah) clean
 	@rm -rf $(dir_out) $(dir_build)
 
-$(dir_out):
-	@mkdir -p "$(dir_out)"
+$(dir_out) $(dir_build):
+	@mkdir -p "$@"
 
 $(dir_out)/$(name).dat: $(dir_build)/main.bin $(dir_out)
-	@mkdir -p $(dir_out)
-	@$(MAKE) $(FLAGS) -C $(dir_mset) launcher
+	@$(MAKE) $(FLAGS) -C $(dir_cakehax) launcher
 	dd if=$(dir_build)/main.bin of=$@ bs=512 seek=144
 
 $(dir_out)/arm9loaderhax.bin: $(dir_build)/main.bin $(dir_out)
 	@cp -av $(dir_build)/main.bin $@
 
-$(dir_out)/arm9.bin: $(dir_build)/main.bin $(dir_out)
-	@cp -av $(dir_build)/main.bin $@
-
-$(dir_out)/arm11.bin:
-	@$(MAKE) -C $(dir_2xrsa)
-	@cp -av $(dir_2xrsa)/bin/arm11.bin $@
-
 $(dir_out)/3ds/$(name): $(dir_out)
-	@mkdir -p $(dir_out)/3ds/$(name)
-	@$(MAKE) $(FLAGS) -C $(dir_ninjhax)
-	@mv $(dir_out)/$(name).3dsx $@
-	@mv $(dir_out)/$(name).smdh $@
+	@mkdir -p "$@"
+	@$(MAKE) $(FLAGS) -C $(dir_cakebrah)
+	@mv $(dir_out)/$(name).3dsx $(dir_out)/$(name).smdh $@
 
-$(dir_out)/$(name)$(revision).7z: launcher a9lh ninjhax 2xrsa
+$(dir_out)/$(name)$(revision).7z: all
 	@7z a -mx $@ ./$(@D)/*
 
 $(dir_build)/main.bin: $(dir_build)/main.elf
 	$(OC) -S -O binary $< $@
 
-$(dir_build)/main.elf: $(objects)
+$(dir_build)/main.elf: $(bundled) $(objects)
 	$(LINK.o) -T linker.ld $(OUTPUT_OPTION) $^
+
+$(dir_build)/%.bin.o: $(dir_build)/%.bin
+	@$(bin2o)
+
+$(dir_build)/loader.bin: $(dir_loader) $(dir_build)
+	@$(MAKE) -C $<
 
 $(dir_build)/memory.o $(dir_build)/strings.o: CFLAGS += -O3
 $(dir_build)/installer.o: CFLAGS += -DTITLE="\"$(name) $(revision)\""
