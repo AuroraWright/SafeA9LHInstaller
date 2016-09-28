@@ -80,7 +80,7 @@
 #define SHA_1_HASH_SIZE		(160 / 8)
 
 extern bool isN3DS;
-const u8 key2s[4][AES_BLOCK_SIZE];
+const u8 key2s[3][AES_BLOCK_SIZE];
 
 void getNandCtr(void);
 void ctrNandInit(void);
