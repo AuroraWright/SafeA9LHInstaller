@@ -46,7 +46,7 @@ u32 fileRead(void *dest, const char *path, u32 maxSize)
     {
         u32 size = f_size(&file);
         if(!(maxSize > 0 && size > maxSize))
-            f_read(&file, dest, size, (unsigned int *)ret);
+            f_read(&file, dest, size, (unsigned int *)&ret);
         f_close(&file);
     }
 
