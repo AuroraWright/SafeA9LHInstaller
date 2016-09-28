@@ -7,9 +7,13 @@ For a comprehensive guide to installing A9LH and to 3DS hacking in general, refe
 For other details about the program, refer to the [GBATemp thread](http://gbatemp.net/threads/safea9lhinstaller.419577/).
 
 **Credits:**
- 
-delebile for his A9LH implementation, everyone in #cakey, StandardBus for allowing this to happen by hardmodding my consoles.
-Code for writing to the screens is from CakesFW.
+
+* delebile for his A9LH implementation
+* Everyone in #cakey
+* StandardBus for allowing this to happen by hardmodding my consoles
+* Everyone who contributed to the discovery and research of OTPless A9LH
+
+Code for writing to the screens is from CakesFW, several other code is from Luma3DS.  
 Original exploit by plutoo.
 
 **Licensing:**
