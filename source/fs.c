@@ -45,7 +45,7 @@ u32 fileRead(void *dest, const char *path, u32 maxSize)
     if(f_open(&file, path, FA_READ) == FR_OK)
     {
         u32 size = f_size(&file);
-        if(!(maxSize > 0 && size > maxSize))
+        if(!(size > maxSize))
             f_read(&file, dest, size, (unsigned int *)&ret);
         f_close(&file);
     }
@@ -135,7 +135,7 @@ u32 firmRead(void *dest)
         //Convert back the .app name from integer to array
         hexItoa(firmVersion, &path[35], 8);
 
-        fileRead(dest, path, 0);
+        if(!fileRead(dest, path, 0x100000)) ret = 3;
     }
 
     return ret;
