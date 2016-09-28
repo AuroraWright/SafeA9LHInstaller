@@ -70,6 +70,7 @@ void main(void)
     }
     else
     {
+        magic[0] = magic[1] = 0;
         posY = drawString("Finalizing install...", 10, posY + SPACING_Y, COLOR_WHITE);
         pressed = 0;
     }
