@@ -9,7 +9,6 @@
 #include "screen.h"
 #include "draw.h"
 #include "utils.h"
-#include "cache.h"
 #include "types.h"
 #include "fatfs/sdmmc/sdmmc.h"
 #include "../build/bundled.h"
