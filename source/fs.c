@@ -27,14 +27,9 @@
 
 static FATFS fs;
 
-bool mountSd(void)
+bool mountFs(bool isSd)
 {
-    return f_mount(&fs, "0:", 1) == FR_OK;
-}
-
-bool mountCtrNand(void)
-{
-    return f_mount(&fs, "1:", 1) == FR_OK;
+    return isSd ? f_mount(&fs, "0:", 1) == FR_OK : f_mount(&fs, "1:", 1) == FR_OK;
 }
 
 u32 fileRead(void *dest, const char *path, u32 maxSize)
@@ -45,7 +40,7 @@ u32 fileRead(void *dest, const char *path, u32 maxSize)
     if(f_open(&file, path, FA_READ) == FR_OK)
     {
         u32 size = f_size(&file);
-        if(!(size > maxSize))
+        if(size <= maxSize)
             f_read(&file, dest, size, (unsigned int *)&ret);
         f_close(&file);
     }
@@ -96,47 +91,50 @@ u32 firmRead(void *dest)
     DIR dir;
     FILINFO info;
 
-    f_opendir(&dir, path);
-
     u32 firmVersion = 0xFFFFFFFF,
         ret = 0;
 
-    //Parse the target directory
-    while(f_readdir(&dir, &info) == FR_OK && info.fname[0] != 0)
+    if(f_opendir(&dir, path) == FR_OK)
     {
-        //Not a cxi
-        if(info.fname[9] != 'a' || strlen(info.fname) != 12) continue;
-
-        //Multiple cxis were found
-        if(firmVersion != 0xFFFFFFFF) ret = 1;
-
-        //Convert the .app name to an integer
-        u32 tempVersion = 0;
-        for(char *tmp = info.altname; *tmp != '.'; tmp++)
+        //Parse the target directory
+        while(f_readdir(&dir, &info) == FR_OK && info.fname[0] != 0)
         {
-            tempVersion <<= 4;
-            tempVersion += *tmp > '9' ? *tmp - 'A' + 10 : *tmp - '0';
+            //Not a cxi
+            if(info.fname[9] != 'a' || strlen(info.fname) != 12) continue;
+
+            //Multiple cxis were found
+            if(firmVersion != 0xFFFFFFFF) ret = 1;
+
+            //Convert the .app name to an integer
+            u32 tempVersion = 0;
+            for(char *tmp = info.altname; *tmp != '.'; tmp++)
+            {
+                tempVersion <<= 4;
+                tempVersion += *tmp > '9' ? *tmp - 'A' + 10 : *tmp - '0';
+            }
+
+            //FIRM is equal or newer than 11.0
+            if(tempVersion >= (isN3DS ? 0x21 : 0x52)) ret = 2;
+
+            //Found an older cxi
+            if(tempVersion < firmVersion) firmVersion = tempVersion;
         }
 
-        //FIRM is equal or newer than 11.0
-        if(tempVersion >= (isN3DS ? 0x21 : 0x52)) ret = 2;
+        f_closedir(&dir);
 
-        //Found an older cxi
-        if(tempVersion < firmVersion) firmVersion = tempVersion;
+        if(!ret && firmVersion != 0xFFFFFFFF)
+        {
+            //Complete the string with the .app name
+            concatenateStrings(path, "/00000000.app");
+
+            //Convert back the .app name from integer to array
+            hexItoa(firmVersion, &path[35], 8);
+
+            if(!fileRead(dest, path, 0x100000)) ret = 3;
+        }
     }
 
-    f_closedir(&dir);
-
-    if(!ret)
-    {
-        //Complete the string with the .app name
-        concatenateStrings(path, "/00000000.app");
-
-        //Convert back the .app name from integer to array
-        hexItoa(firmVersion, &path[35], 8);
-
-        if(!fileRead(dest, path, 0x100000)) ret = 3;
-    }
+    if(firmVersion == 0xFFFFFFFF) ret = 4;
 
     return ret;
 }

@@ -470,9 +470,8 @@ void sdmmc_get_cid(bool isNand, u32 *info)
     sdmmc_send_command(device, 0x10507, device->initarg << 0x10);
 }
 
-void sdmmc_sdcard_init()
+bool sdmmc_sdcard_init()
 {
     InitSD();
-    Nand_Init();
-    SD_Init();
+    return Nand_Init() + SD_Init() == 0;
 }

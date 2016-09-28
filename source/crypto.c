@@ -310,14 +310,14 @@ void ctrNandInit(void)
     }
 }
 
-u32 ctrNandRead(u32 sector, u32 sectorCount, u8 *outbuf)
+int ctrNandRead(u32 sector, u32 sectorCount, u8 *outbuf)
 {
     u8 __attribute__((aligned(4))) tmpCtr[sizeof(nandCtr)];
     memcpy(tmpCtr, nandCtr, sizeof(nandCtr));
     aes_advctr(tmpCtr, ((sector + fatStart) * 0x200) / AES_BLOCK_SIZE, AES_INPUT_BE | AES_INPUT_NORMAL);
 
     //Read
-    u32 result = sdmmc_nand_readsectors(sector + fatStart, sectorCount, outbuf);
+    int result = sdmmc_nand_readsectors(sector + fatStart, sectorCount, outbuf);
 
     //Decrypt
     aes_use_keyslot(nandSlot);
@@ -358,28 +358,33 @@ void writeFirm(u8 *inbuf, bool isFirm1, u32 size)
 void setupKeyslot0x11(const void *otp, bool isA9lh)
 {
     u8 __attribute__((aligned(4))) shasum[SHA_256_HASH_SIZE];
-    u8 __attribute__((aligned(4))) keyX[AES_BLOCK_SIZE];
-    u8 __attribute__((aligned(4))) keyY[AES_BLOCK_SIZE];
 
     //If booting via A9LH, use the leftover contents of the SHA register
     if(isA9lh) memcpy(shasum, (void *)REG_SHA_HASH, sizeof(shasum));
 
-    //Else calculate the otp.bin hash
+    //Otherwise, calculate the otp.bin hash
     else sha(shasum, otp, 0x90, SHA_256_MODE);
 
     //Set keyX and keyY
-    memcpy(keyX, shasum, sizeof(keyX));
-    memcpy(keyY, shasum + sizeof(keyX), sizeof(keyY));
-    aes_setkey(0x11, keyX, AES_KEYX, AES_INPUT_BE | AES_INPUT_NORMAL);
-    aes_setkey(0x11, keyY, AES_KEYY, AES_INPUT_BE | AES_INPUT_NORMAL);
+    aes_setkey(0x11, shasum, AES_KEYX, AES_INPUT_BE | AES_INPUT_NORMAL);
+    aes_setkey(0x11, shasum + AES_BLOCK_SIZE, AES_KEYY, AES_INPUT_BE | AES_INPUT_NORMAL);
 }
 
 void generateSector(u8 *keySector, u32 mode)
 {
     //Inject key2
-    if(mode == 0) memcpy(keySector + AES_BLOCK_SIZE, key2s[2], AES_BLOCK_SIZE);
-    else if(mode == 1) memcpy(keySector + AES_BLOCK_SIZE, keySector, AES_BLOCK_SIZE);
-    else memcpy(keySector + AES_BLOCK_SIZE, key2s[0], AES_BLOCK_SIZE);
+    switch(mode)
+    {
+        case 1:
+            memcpy(keySector + AES_BLOCK_SIZE, keySector, AES_BLOCK_SIZE);
+            break;
+        case 2:
+            memcpy(keySector + AES_BLOCK_SIZE, key2s[0], AES_BLOCK_SIZE);
+            break;
+        default:
+            memcpy(keySector + AES_BLOCK_SIZE, key2s[2], AES_BLOCK_SIZE);
+            break;
+    }
 
     if(mode != 1)
     {
@@ -404,7 +409,7 @@ void getSector(u8 *keySector, bool isA9lh)
     }
 }
 
-u32 verifyHash(const void *data, u32 size, const u8 *hash)
+bool verifyHash(const void *data, u32 size, const u8 *hash)
 {
     u8 __attribute__((aligned(4))) shasum[SHA_256_HASH_SIZE];
     sha(shasum, data, size, SHA_256_MODE);

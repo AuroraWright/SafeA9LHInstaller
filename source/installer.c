@@ -52,11 +52,13 @@ void main(void)
     vu32 *magic = (vu32 *)0x25000000;
     bool isOtpless = isA9lh && magic[0] == 0xABADCAFE && magic[1] == 0xDEADCAFE;
 
-    sdmmc_sdcard_init();
     initScreens();
 
     drawString(TITLE, 10, 10, COLOR_TITLE);
     posY = drawString("Thanks to delebile, #cakey and StandardBus", 10, 40, COLOR_WHITE);
+
+    if(!sdmmc_sdcard_init() && !isOtpless)
+        shutdown(1, "Error: failed to initialize SD and NAND");
 
     u32 pressed;
 
@@ -84,7 +86,7 @@ static inline void installer(bool isA9lh, bool isOtpless)
     u8 otp[256] = {0},
        keySector[512];
 
-    if(!isOtpless && !mountSd())
+    if(!isOtpless && !mountFs(true))
         shutdown(1, "Error: failed to mount the SD card");
 
     //If making a first install on O3DS, we need the OTP
@@ -241,7 +243,7 @@ static inline void uninstaller(void)
     }
     else memset32(keySector, 0, sizeof(keySector));
 
-    if(!mountCtrNand())
+    if(!mountFs(false))
         shutdown(1, "Error: failed to mount CTRNAND");
 
     //Read FIRM cxi from CTRNAND
@@ -255,6 +257,9 @@ static inline void uninstaller(void)
             break;
         case 3:
             shutdown(1, "Error: the CTRNAND FIRM is too large");
+            break;
+        case 4:
+            shutdown(1, "Error: couldn't read FIRM from CTRNAND");
             break;
         default:
             break;

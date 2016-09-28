@@ -84,11 +84,11 @@ const u8 key2s[3][AES_BLOCK_SIZE];
 
 void getNandCtr(void);
 void ctrNandInit(void);
-u32 ctrNandRead(u32 sector, u32 sectorCount, u8 *outbuf);
+int ctrNandRead(u32 sector, u32 sectorCount, u8 *outbuf);
 void readFirm0(u8 *outbuf, u32 size);
 void writeFirm(u8 *inbuf, bool isFirm1, u32 size);
 void setupKeyslot0x11(const void *otp, bool isA9lh);
 void generateSector(u8 *keySector, u32 mode);
 void getSector(u8 *keySector, bool isA9lh);
-u32 verifyHash(const void *data, u32 size, const u8 *hash);
+bool verifyHash(const void *data, u32 size, const u8 *hash);
 u32 decryptExeFs(u8 *inbuf);
