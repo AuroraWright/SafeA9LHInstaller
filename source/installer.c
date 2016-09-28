@@ -144,25 +144,7 @@ static inline void installer(bool isA9lh, bool isOtpless)
          if(i == 0) updateA9lh = true;
     }
 
-    if(!isA9lh)
-    {
-        //Read FIRM1
-        if(fileRead((void *)FIRM1_OFFSET, "a9lh/firm1.bin", FIRM1_SIZE) != FIRM1_SIZE)
-            shutdown(1, "Error: firm1.bin doesn't exist or has a wrong size");
-        if(!verifyHash((void *)FIRM1_OFFSET, FIRM1_SIZE, firm1Hash))
-            shutdown(1, "Error: firm1.bin is invalid or corrupted");
-
-        if(isN3DS)
-        {
-            //Read FIRM0
-            if(fileRead((void *)FIRM0_100_OFFSET, "a9lh/firm0_100.bin", FIRM0100_SIZE) != FIRM0100_SIZE)
-                shutdown(1, "Error: firm0_100.bin doesn't exist or has a wrong size");
-            if(!verifyHash((void *)FIRM0_100_OFFSET, FIRM0100_SIZE, firm0100Hash))
-                shutdown(1, "Error: firm0_100.bin is invalid or corrupted");
-        }
-    }
-
-    if(!isA9lh || updateA9lh || isOtpless) generateSector(keySector, (isN3DS && !isA9lh) ? 1 : 0);
+    if(!isA9lh || updateA9lh || isOtpless) generateSector(keySector, (!isA9lh && isN3DS) ? 1 : 0);
 
     if(!isA9lh || updateA9lh)
     {
@@ -174,6 +156,24 @@ static inline void installer(bool isA9lh, bool isOtpless)
     }
     else if(!isOtpless && !verifyHash((void *)FIRM0_OFFSET, SECTION2_POSITION, firm0A9lhHash))
         shutdown(1, "Error: NAND FIRM0 is invalid");
+
+    if(!isA9lh)
+    {
+        if(isN3DS)
+        {
+            //Read 10.0 FIRM0
+            if(fileRead((void *)FIRM0_100_OFFSET, "a9lh/firm0_100.bin", FIRM0100_SIZE) != FIRM0100_SIZE)
+                shutdown(1, "Error: firm0_100.bin doesn't exist or has a wrong size");
+            if(!verifyHash((void *)FIRM0_100_OFFSET, FIRM0100_SIZE, firm0100Hash))
+                shutdown(1, "Error: firm0_100.bin is invalid or corrupted");
+        }
+
+        //Read FIRM1
+        if(fileRead((void *)FIRM1_OFFSET, "a9lh/firm1.bin", FIRM1_SIZE) != FIRM1_SIZE)
+            shutdown(1, "Error: firm1.bin doesn't exist or has a wrong size");
+        if(!verifyHash((void *)FIRM1_OFFSET, FIRM1_SIZE, firm1Hash))
+            shutdown(1, "Error: firm1.bin is invalid or corrupted");
+    }
 
     if(!isOtpless)
     {
