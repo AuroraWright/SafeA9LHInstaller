@@ -205,7 +205,7 @@ static inline void installer(bool isA9lh, bool isOtpless)
         *(u32 *)0x80FD0FC = 0xEAFFCBBF; //B 0x80F0000
         memcpy((void *)0x80F0000, loader_bin, loader_bin_size);
 
-        writeFirm((u8 *)FIRM0_100_OFFSET, false, FIRM0_SIZE);
+        writeFirm((u8 *)FIRM0_100_OFFSET, false, FIRM0100_SIZE);
 
         mcuReboot();
     }

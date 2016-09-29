@@ -316,7 +316,7 @@ int ctrNandRead(u32 sector, u32 sectorCount, u8 *outbuf)
     memcpy(tmpCtr, nandCtr, sizeof(nandCtr));
     aes_advctr(tmpCtr, ((sector + fatStart) * 0x200) / AES_BLOCK_SIZE, AES_INPUT_BE | AES_INPUT_NORMAL);
 
-    //Read
+    //Read from NAND
     int result = sdmmc_nand_readsectors(sector + fatStart, sectorCount, outbuf);
 
     //Decrypt
@@ -330,12 +330,12 @@ void readFirm0(u8 *outbuf, u32 size)
 {
     u8 __attribute__((aligned(4))) ctrTmp[sizeof(nandCtr)];
     memcpy(ctrTmp, nandCtr, sizeof(nandCtr));
+    aes_advctr(ctrTmp, 0x0B130000 / AES_BLOCK_SIZE, AES_INPUT_BE | AES_INPUT_NORMAL);
 
-    //Read FIRM0 data
+    //Read from NAND
     sdmmc_nand_readsectors(0x0B130000 / 0x200, size / 0x200, outbuf);
 
     //Decrypt
-    aes_advctr(ctrTmp, 0x0B130000 / AES_BLOCK_SIZE, AES_INPUT_BE | AES_INPUT_NORMAL);
     aes_use_keyslot(0x06);
     aes(outbuf, outbuf, size / AES_BLOCK_SIZE, ctrTmp, AES_CTR_MODE, AES_INPUT_BE | AES_INPUT_NORMAL);
 }
@@ -345,9 +345,9 @@ void writeFirm(u8 *inbuf, bool isFirm1, u32 size)
     u32 offset = isFirm1 ? 0x0B530000 : 0x0B130000;
     u8 __attribute__((aligned(4))) ctrTmp[sizeof(nandCtr)];
     memcpy(ctrTmp, nandCtr, sizeof(nandCtr));
-
-    //Encrypt FIRM data
     aes_advctr(ctrTmp, offset / AES_BLOCK_SIZE, AES_INPUT_BE | AES_INPUT_NORMAL);
+
+    //Encrypt
     aes_use_keyslot(0x06);
     aes(inbuf, inbuf, size / AES_BLOCK_SIZE, ctrTmp, AES_CTR_MODE, AES_INPUT_BE | AES_INPUT_NORMAL);
 
