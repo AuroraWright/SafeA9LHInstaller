@@ -51,6 +51,7 @@ u32 fileRead(void *dest, const char *path, u32 maxSize)
 bool fileWrite(const void *buffer, const char *path, u32 size)
 {
     FIL file;
+    bool ret;
 
     FRESULT result = f_open(&file, path, FA_WRITE | FA_OPEN_ALWAYS);
 
@@ -61,10 +62,9 @@ bool fileWrite(const void *buffer, const char *path, u32 size)
         f_truncate(&file);
         f_close(&file);
 
-        return (u32)written == size;
+        ret = (u32)written == size;
     }
-
-    if(result == FR_NO_PATH)
+    else if(result == FR_NO_PATH)
     {
         for(u32 i = 1; path[i] != 0; i++)
            if(path[i] == '/')
@@ -72,13 +72,15 @@ bool fileWrite(const void *buffer, const char *path, u32 size)
                 char folder[i + 1];
                 memcpy(folder, path, i);
                 folder[i] = 0;
-                f_mkdir(folder);
+                ret = f_mkdir(folder) == FR_OK;
+                if(!ret) break;
            }
 
-        return fileWrite(buffer, path, size);
+        if(ret) ret = fileWrite(buffer, path, size);
     }
+    else ret = false;
 
-    return false;
+    return ret;
 }
 
 u32 firmRead(void *dest)
