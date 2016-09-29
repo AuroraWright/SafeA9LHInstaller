@@ -37,7 +37,7 @@ u32 waitInput(void)
 
 void mcuReboot(void)
 {
-    if(PDN_GPU_CNT != 1) clearScreens();
+    clearScreens();
 
     //Ensure that all memory transfers have completed and that the data cache has been flushed
     flushEntireDCache();
@@ -48,14 +48,14 @@ void mcuReboot(void)
 
 void shutdown(u32 mode, const char *message)
 {
-    if(mode)
+    if(mode != 0)
     {
         posY = drawString(message, 10, posY + SPACING_Y, mode == 1 ? COLOR_RED : COLOR_GREEN);
         drawString("Press any button to shutdown", 10, posY, COLOR_WHITE);
         waitInput();
     }
 
-    if(PDN_GPU_CNT != 1) clearScreens();
+    clearScreens();
 
     //Ensure that all memory transfers have completed and that the data cache has been flushed
     flushEntireDCache();

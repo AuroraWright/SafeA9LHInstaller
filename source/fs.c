@@ -61,7 +61,7 @@ bool fileWrite(const void *buffer, const char *path, u32 size)
         f_truncate(&file);
         f_close(&file);
 
-        return true;
+        return (u32)written == size;
     }
 
     if(result == FR_NO_PATH)

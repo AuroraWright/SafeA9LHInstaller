@@ -138,11 +138,11 @@ static inline void installer(bool isA9lh, bool isOtpless)
     if(isA9lh && !isOtpless)
     {
          u32 i;
-         for(i = 0; i < 3; i++)
+         for(i = 1; i < 3; i++)
              if(memcmp(keySector + AES_BLOCK_SIZE, key2s[i], AES_BLOCK_SIZE) == 0) break;
 
-         if(i == 4) shutdown(1, "Error: the OTP hash or the NAND key sector\nare invalid");
-         if(i == 0) updateA9lh = true;
+         if(i == 3) shutdown(1, "Error: the OTP hash or the NAND key sector\nare invalid");
+         if(i == 1) updateA9lh = true;
     }
 
     if(!isA9lh || updateA9lh || isOtpless) generateSector(keySector, (!isA9lh && isN3DS) ? 1 : 0);

@@ -35,7 +35,7 @@ static inline void ownArm11(void)
     *(vu32 *)0x1FFAED80 = 0xE51FF004;
     *(vu32 *)0x1FFAED84 = A11_PAYLOAD_LOC;
     *(vu8 *)0x1FFFFFF0 = 2;
-    while(*(vu32 *)A11_ENTRYPOINT);
+    while(*(vu32 *)A11_ENTRYPOINT != 0);
 }
 
 void main(void)
