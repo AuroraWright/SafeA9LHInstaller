@@ -37,8 +37,7 @@ DSTATUS disk_initialize (
 	BYTE pdrv				/* Physical drive nmuber to identify the drive */
 )
 {
-        if(pdrv == CTRNAND)
-            ctrNandInit();
+        if(pdrv == CTRNAND) ctrNandInit();
 
 	return RES_OK;
 }
