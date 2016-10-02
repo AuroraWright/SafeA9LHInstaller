@@ -16,24 +16,20 @@
 static const u8 sectorHash[SHA_256_HASH_SIZE] = {
     0x82, 0xF2, 0x73, 0x0D, 0x2C, 0x2D, 0xA3, 0xF3, 0x01, 0x65, 0xF9, 0x87, 0xFD, 0xCC, 0xAC, 0x5C,
     0xBA, 0xB2, 0x4B, 0x4E, 0x5F, 0x65, 0xC9, 0x81, 0xCD, 0x7B, 0xE6, 0xF4, 0x38, 0xE6, 0xD9, 0xD3
-};
-
-static const u8 firm0Hash[SHA_256_HASH_SIZE] = {
+},
+                firm0Hash[SHA_256_HASH_SIZE] = {
     0x6E, 0x4D, 0x14, 0xAD, 0x51, 0x50, 0xA5, 0x9A, 0x87, 0x59, 0x62, 0xB7, 0x09, 0x0A, 0x3C, 0x74,
     0x4F, 0x72, 0x4B, 0xBD, 0x97, 0x39, 0x33, 0xF2, 0x11, 0xC9, 0x35, 0x22, 0xC8, 0xBB, 0x1C, 0x7D
-};
-
-static const u8 firm0A9lhHash[SHA_256_HASH_SIZE] = {
+},
+                firm0A9lhHash[SHA_256_HASH_SIZE] = {
     0x79, 0x3D, 0x35, 0x7B, 0x8F, 0xF1, 0xFC, 0xF0, 0x8F, 0xB6, 0xDB, 0x51, 0x31, 0xD4, 0xA7, 0x74,
     0x8E, 0xF0, 0x4A, 0xB1, 0xA6, 0x7F, 0xCD, 0xAB, 0x0C, 0x0A, 0xC0, 0x69, 0xA7, 0x9D, 0xC5, 0x04
-};
-
-static const u8 firm0100Hash[SHA_256_HASH_SIZE] = {
+},
+                firm0100Hash[SHA_256_HASH_SIZE] = {
     0xD8, 0x2D, 0xB7, 0xB4, 0x38, 0x2B, 0x07, 0x88, 0x99, 0x77, 0x91, 0x0C, 0xC6, 0xEC, 0x6D, 0x87,
     0x7D, 0x21, 0x79, 0x23, 0xD7, 0x60, 0xAF, 0x4E, 0x8B, 0x3A, 0xAB, 0xB2, 0x63, 0xE4, 0x21, 0xC6
-};
-
-static const u8 firm1Hash[SHA_256_HASH_SIZE] = {
+},
+                firm1Hash[SHA_256_HASH_SIZE] = {
     0xD2, 0x53, 0xC1, 0xCC, 0x0A, 0x5F, 0xFA, 0xC6, 0xB3, 0x83, 0xDA, 0xC1, 0x82, 0x7C, 0xFB, 0x3B,
     0x2D, 0x3D, 0x56, 0x6C, 0x6A, 0x1A, 0x8E, 0x52, 0x54, 0xE3, 0x89, 0xC2, 0x95, 0x06, 0x23, 0xE5
 };
@@ -184,8 +180,8 @@ static inline void installer(bool isA9lh, bool isOtpless)
 
         //Inject stage1
         memset32((void *)STAGE1_OFFSET, 0, MAX_STAGE1_SIZE);
-        u32 stage1Size = fileRead((void *)STAGE1_OFFSET, "a9lh/payload_stage1.bin", MAX_STAGE1_SIZE);
-        if(!stage1Size)
+        u32 stageSize = fileRead((void *)STAGE1_OFFSET, "a9lh/payload_stage1.bin", MAX_STAGE1_SIZE);
+        if(!stageSize)
             shutdown(1, "Error: payload_stage1.bin doesn't exist or\nexceeds max size");
 
         const u8 zeroes[688] = {0};
@@ -195,7 +191,7 @@ static inline void installer(bool isA9lh, bool isOtpless)
         //Verify stage1
         if(fileRead(stageHash, "a9lh/payload_stage1.bin.sha", sizeof(stageHash)) == sizeof(stageHash))
         {
-            if(!verifyHash((void *)STAGE1_OFFSET, stage1Size, stageHash))
+            if(!verifyHash((void *)STAGE1_OFFSET, stageSize, stageHash))
                 shutdown(1, "Error: payload_stage1.bin is invalid\nor corrupted");
 
             missingStage1Hash = false;
@@ -204,14 +200,14 @@ static inline void installer(bool isA9lh, bool isOtpless)
 
         //Read stage2
         memset32((void *)STAGE2_OFFSET, 0, MAX_STAGE2_SIZE);
-        u32 stage2Size = fileRead((void *)STAGE2_OFFSET, "a9lh/payload_stage2.bin", MAX_STAGE2_SIZE);
-        if(!stage2Size)
+        stageSize = fileRead((void *)STAGE2_OFFSET, "a9lh/payload_stage2.bin", MAX_STAGE2_SIZE);
+        if(!stageSize)
             shutdown(1, "Error: payload_stage2.bin doesn't exist or\nexceeds max size");
 
         //Verify stage2
         if(fileRead(stageHash, "a9lh/payload_stage2.bin.sha", sizeof(stageHash)) == sizeof(stageHash))
         {
-            if(!verifyHash((void *)STAGE2_OFFSET, stage2Size, stageHash))
+            if(!verifyHash((void *)STAGE2_OFFSET, stageSize, stageHash))
                 shutdown(1, "Error: payload_stage2.bin is invalid\nor corrupted");
 
             missingStage2Hash = false;
