@@ -46,6 +46,21 @@ void mcuReboot(void)
     while(true);
 }
 
+void inputSequence(void)
+{
+    posY = drawString("If you would like to continue, press:", 10, posY, COLOR_WHITE);
+    posY = drawString("Up, Down, Left, Right, B, A, START, SELECT", 10, posY, COLOR_WHITE);
+
+    u32 unlockSequence[] = { BUTTON_UP, BUTTON_DOWN, BUTTON_LEFT, BUTTON_RIGHT, BUTTON_B, BUTTON_A, BUTTON_START, BUTTON_SELECT },
+        sequenceSize = sizeof(unlockSequence) / sizeof(u32);
+
+    for(u32 correctPresses = 0; correctPresses < sequenceSize; correctPresses++)
+    {
+        if(waitInput() != unlockSequence[correctPresses])
+            shutdown(1, "Button sequence not entered correctly");
+    }
+}
+
 void shutdown(u32 mode, const char *message)
 {
     if(mode != 0)
