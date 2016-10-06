@@ -63,11 +63,13 @@ static inline void setckl(u32 data)
     sdmmc_mask16(REG_SDCLKCTL, 0x0, 0x100);
 }
 
+/*
 mmcdevice *getMMCDevice(int drive)
 {
     if(drive == 0) return &handleNAND;
     return &handleSD;
 }
+*/
 
 static int geterror(struct mmcdevice *ctx)
 {
@@ -470,8 +472,10 @@ void sdmmc_get_cid(bool isNand, u32 *info)
     sdmmc_send_command(device, 0x10507, device->initarg << 0x10);
 }
 
-bool sdmmc_sdcard_init()
+bool sdmmc_sdcard_init(bool isOtpless)
 {
     InitSD();
-    return (Nand_Init() | SD_Init()) == 0;
+    int nand_ret = Nand_Init();
+    if(isOtpless) return true;
+    return (nand_ret | SD_Init()) == 0;
 }

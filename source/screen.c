@@ -38,7 +38,7 @@
 #include "cache.h"
 #include "i2c.h"
 
-vu32 *const arm11Entry = (vu32 *)BRAHMA_ARM11_ENTRY;
+vu32 *arm11Entry = (vu32 *)BRAHMA_ARM11_ENTRY;
 
 static void invokeArm11Function(void (*func)())
 {

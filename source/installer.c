@@ -53,7 +53,7 @@ void main(void)
     drawString(TITLE, 10, 10, COLOR_TITLE);
     posY = drawString("Thanks to delebile, #cakey and StandardBus", 10, 40, COLOR_WHITE);
 
-    if(!sdmmc_sdcard_init() && !isOtpless)
+    if(!sdmmc_sdcard_init(isOtpless))
         shutdown(1, "Error: failed to initialize SD and NAND");
 
     u32 pressed;
