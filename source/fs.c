@@ -53,32 +53,34 @@ bool fileWrite(const void *buffer, const char *path, u32 size)
     FIL file;
     bool ret;
 
-    FRESULT result = f_open(&file, path, FA_WRITE | FA_OPEN_ALWAYS);
-
-    if(result == FR_OK)
+    switch(f_open(&file, path, FA_WRITE | FA_OPEN_ALWAYS))
     {
-        unsigned int written;
-        f_write(&file, buffer, size, &written);
-        f_truncate(&file);
-        f_close(&file);
+        case FR_OK:
+        {
+            unsigned int written;
+            f_write(&file, buffer, size, &written);
+            f_truncate(&file);
+            f_close(&file);
 
-        ret = (u32)written == size;
-    }
-    else if(result == FR_NO_PATH)
-    {
-        for(u32 i = 1; path[i] != 0; i++)
-           if(path[i] == '/')
-           {
-                char folder[i + 1];
-                memcpy(folder, path, i);
-                folder[i] = 0;
-                ret = f_mkdir(folder) == FR_OK;
-                if(!ret) break;
-           }
+            ret = (u32)written == size;
+            break;
+        }
+        case FR_NO_PATH:
+            for(u32 i = 1; path[i] != 0; i++)
+                if(path[i] == '/')
+                {
+                    char folder[i + 1];
+                    memcpy(folder, path, i);
+                    folder[i] = 0;
+                    f_mkdir(folder);
+                }
 
-        if(ret) ret = fileWrite(buffer, path, size);
+            ret = fileWrite(buffer, path, size);
+            break;
+        default:
+            ret = false;
+            break;
     }
-    else ret = false;
 
     return ret;
 }
@@ -87,7 +89,7 @@ u32 firmRead(void *dest)
 {
     const char *firmFolders[] = { "00000002", "20000002" };
     char path[48] = "1:/title/00040138/";
-    concatenateStrings(path, firmFolders[isN3DS ? 1 : 0]);
+    concatenateStrings(path, firmFolders[ISN3DS ? 1 : 0]);
     concatenateStrings(path, "/content");
 
     DIR dir;
@@ -116,7 +118,7 @@ u32 firmRead(void *dest)
             }
 
             //FIRM is equal or newer than 11.0
-            if(tempVersion >= (isN3DS ? 0x21 : 0x52)) ret = 2;
+            if(tempVersion >= (ISN3DS ? 0x21 : 0x52)) ret = 2;
 
             //Found an older cxi
             if(tempVersion < firmVersion) firmVersion = tempVersion;

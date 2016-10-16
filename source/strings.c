@@ -50,6 +50,4 @@ void hexItoa(u32 number, char *out, u32 digits)
         out[digits - 1 - i++] = hexDigits[number & 0xF];
         number >>= 4;
     }
-
-    while(i < digits) out[digits - 1 - i++] = '0';
 }

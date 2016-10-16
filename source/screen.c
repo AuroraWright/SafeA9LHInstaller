@@ -179,7 +179,7 @@ void initScreens(void)
         WAIT_FOR_ARM9();
     }
 
-    if(PDN_GPU_CNT == 1)
+    if(!ARESCREENSINITED)
     {
         invokeArm11Function(initSequence);
 

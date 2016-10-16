@@ -2,7 +2,6 @@
 *   installer.c
 */
 
-#include "installer.h"
 #include "memory.h"
 #include "fs.h"
 #include "crypto.h"
@@ -10,6 +9,7 @@
 #include "draw.h"
 #include "utils.h"
 #include "types.h"
+#include "installer.h"
 #include "fatfs/sdmmc/sdmmc.h"
 #include "../build/bundled.h"
 
@@ -25,6 +25,10 @@ static const u8 sectorHash[SHA_256_HASH_SIZE] = {
     0x79, 0x3D, 0x35, 0x7B, 0x8F, 0xF1, 0xFC, 0xF0, 0x8F, 0xB6, 0xDB, 0x51, 0x31, 0xD4, 0xA7, 0x74,
     0x8E, 0xF0, 0x4A, 0xB1, 0xA6, 0x7F, 0xCD, 0xAB, 0x0C, 0x0A, 0xC0, 0x69, 0xA7, 0x9D, 0xC5, 0x04
 },
+                firm090A9lhHash[SHA_256_HASH_SIZE] = {
+    0x68, 0x52, 0xCC, 0x21, 0x89, 0xAE, 0x28, 0x38, 0x1A, 0x75, 0x90, 0xE7, 0x38, 0x23, 0x48, 0x41,
+    0x8E, 0x80, 0x78, 0x75, 0x27, 0x64, 0x04, 0xD6, 0x28, 0xD6, 0xFA, 0x39, 0xA8, 0x6F, 0xB0, 0x3F
+},
                 firm0100Hash[SHA_256_HASH_SIZE] = {
     0xD8, 0x2D, 0xB7, 0xB4, 0x38, 0x2B, 0x07, 0x88, 0x99, 0x77, 0x91, 0x0C, 0xC6, 0xEC, 0x6D, 0x87,
     0x7D, 0x21, 0x79, 0x23, 0xD7, 0x60, 0xAF, 0x4E, 0x8B, 0x3A, 0xAB, 0xB2, 0x63, 0xE4, 0x21, 0xC6
@@ -35,18 +39,11 @@ static const u8 sectorHash[SHA_256_HASH_SIZE] = {
 };
 
 u32 posY;
-bool isN3DS;
 
 void main(void)
 {
-    //Determine if booting with A9LH
-    bool isA9lh = !PDN_SPI_CNT;
-
-    //Detect the console being used
-    isN3DS = PDN_MPCORE_CFG == 7;
-
     vu32 *magic = (vu32 *)0x25000000;
-    bool isOtpless = isA9lh && magic[0] == 0xABADCAFE && magic[1] == 0xDEADCAFE;
+    bool isOtpless = ISA9LH && magic[0] == 0xABADCAFE && magic[1] == 0xDEADCAFE;
 
     initScreens();
 
@@ -60,7 +57,7 @@ void main(void)
 
     if(!isOtpless)
     {
-        posY = drawString(isA9lh ? "Press SELECT to update A9LH, START to uninstall" : "Press SELECT for a full install", 10, posY + SPACING_Y, COLOR_WHITE);
+        posY = drawString(ISA9LH ? "Press SELECT to update A9LH, START to uninstall" : "Press SELECT for a full install", 10, posY + SPACING_Y, COLOR_WHITE);
         posY = drawString("Press any other button to shutdown", 10, posY, COLOR_WHITE);
         pressed = waitInput();
     }
@@ -71,15 +68,17 @@ void main(void)
         pressed = 0;
     }
 
-    if(isOtpless || pressed == BUTTON_SELECT) installer(isA9lh, isOtpless);
-    if(pressed == BUTTON_START && isA9lh) uninstaller();
+    if(isOtpless || pressed == BUTTON_SELECT) installer(isOtpless);
+    if(pressed == BUTTON_START && ISA9LH) uninstaller();
 
     shutdown(0, NULL);
 }
 
-static inline void installer(bool isA9lh, bool isOtpless)
+static inline void installer(bool isOtpless)
 {
-    bool updateA9lh = false;
+    bool updateKey2 = false,
+         updateFirm0 = false,
+         updateFirm1 = false;
     u8 otp[256] = {0},
        keySector[512];
 
@@ -87,7 +86,7 @@ static inline void installer(bool isA9lh, bool isOtpless)
         shutdown(1, "Error: failed to mount the SD card");
 
     //If making a first install on O3DS, we need the OTP
-    if(!isA9lh && !isN3DS)
+    if(!ISA9LH && !ISN3DS)
     {
         const char otpPath[] = "a9lh/otp.bin";
 
@@ -107,7 +106,7 @@ static inline void installer(bool isA9lh, bool isOtpless)
     }
 
     //Setup the key sector de/encryption with the SHA register or otp.bin
-    if(isA9lh || !isN3DS) setupKeyslot0x11(otp, isA9lh);
+    if(ISA9LH || !ISN3DS) setupKeyslot0x11(otp, ISA9LH);
 
     //Calculate the CTR for the 3DS partitions
     getNandCtr();
@@ -121,7 +120,7 @@ static inline void installer(bool isA9lh, bool isOtpless)
     }
 
     //If booting from A9LH or on N3DS, we can use the key sector from NAND
-    if(isA9lh || isN3DS) getSector(keySector, isA9lh);
+    if(ISA9LH || ISN3DS) getSector(keySector, ISA9LH);
     else
     {
          //Read decrypted key sector
@@ -131,19 +130,50 @@ static inline void installer(bool isA9lh, bool isOtpless)
              shutdown(1, "Error: secret_sector.bin is invalid or corrupted");
     }
 
-    if(isA9lh && !isOtpless)
+    if(ISA9LH && !isOtpless)
     {
-         u32 i;
-         for(i = 1; i < 3; i++)
-             if(memcmp(keySector + AES_BLOCK_SIZE, key2s[i], AES_BLOCK_SIZE) == 0) break;
+        u32 i;
+        for(i = 1; i < 5; i++)
+            if(memcmp(keySector + AES_BLOCK_SIZE, key2s[i], AES_BLOCK_SIZE) == 0) break;
 
-         if(i == 3) shutdown(1, "Error: the OTP hash or the NAND key sector\nare invalid");
-         if(i == 1) updateA9lh = true;
+        switch(i)
+        {
+            case 5:
+                shutdown(1, "Error: the OTP hash or the NAND key sector\nare invalid");
+                break;
+            case 2:
+            case 3:
+                updateKey2 = true;
+                break;
+            case 4:
+                updateFirm1 = true;
+                updateKey2 = true;
+                break;
+            default:
+                break;
+        }
+
+        if(!verifyHash((void *)FIRM0_OFFSET, SECTION2_POSITION, firm0A9lhHash))
+        {
+            if(!verifyHash((void *)FIRM0_OFFSET, SECTION2_POSITION, firm090A9lhHash))
+                shutdown(1, "Error: NAND FIRM0 is invalid");
+
+            updateFirm0 = true;
+        }
     }
 
-    if(!isA9lh || updateA9lh || isOtpless) generateSector(keySector, (!isA9lh && isN3DS) ? 1 : 0);
+    if(!ISA9LH || updateKey2 || isOtpless) generateSector(keySector, (!ISA9LH && ISN3DS) ? 1 : 0);
 
-    if(!isA9lh || updateA9lh)
+    if(!ISA9LH && ISN3DS)
+    {
+        //Read 10.0 FIRM0
+        if(fileRead((void *)FIRM0_100_OFFSET, "a9lh/firm0_100.bin", FIRM0100_SIZE) != FIRM0100_SIZE)
+            shutdown(1, "Error: firm0_100.bin doesn't exist or has a wrong size");
+        if(!verifyHash((void *)FIRM0_100_OFFSET, FIRM0100_SIZE, firm0100Hash))
+            shutdown(1, "Error: firm0_100.bin is invalid or corrupted");
+    }
+
+    if(!ISA9LH || updateFirm0)
     {
         //Read FIRM0
         if(fileRead((void *)FIRM0_OFFSET, "a9lh/firm0.bin", FIRM0_SIZE) != FIRM0_SIZE)
@@ -151,20 +181,9 @@ static inline void installer(bool isA9lh, bool isOtpless)
         if(!verifyHash((void *)FIRM0_OFFSET, FIRM0_SIZE, firm0Hash))
             shutdown(1, "Error: firm0.bin is invalid or corrupted");
     }
-    else if(!isOtpless && !verifyHash((void *)FIRM0_OFFSET, SECTION2_POSITION, firm0A9lhHash))
-        shutdown(1, "Error: NAND FIRM0 is invalid");
 
-    if(!isA9lh)
+    if(!ISA9LH || updateFirm1)
     {
-        if(isN3DS)
-        {
-            //Read 10.0 FIRM0
-            if(fileRead((void *)FIRM0_100_OFFSET, "a9lh/firm0_100.bin", FIRM0100_SIZE) != FIRM0100_SIZE)
-                shutdown(1, "Error: firm0_100.bin doesn't exist or has a wrong size");
-            if(!verifyHash((void *)FIRM0_100_OFFSET, FIRM0100_SIZE, firm0100Hash))
-                shutdown(1, "Error: firm0_100.bin is invalid or corrupted");
-        }
-
         //Read FIRM1
         if(fileRead((void *)FIRM1_OFFSET, "a9lh/firm1.bin", FIRM1_SIZE) != FIRM1_SIZE)
             shutdown(1, "Error: firm1.bin doesn't exist or has a wrong size");
@@ -226,10 +245,10 @@ static inline void installer(bool isA9lh, bool isOtpless)
         sdmmc_nand_writesectors(0x5C000, MAX_STAGE2_SIZE / 0x200, (u8 *)STAGE2_OFFSET);
     }
 
-    if(!isA9lh) writeFirm((u8 *)FIRM1_OFFSET, true, FIRM1_SIZE);
-    if(!isA9lh || updateA9lh || isOtpless) sdmmc_nand_writesectors(0x96, 1, keySector);
+    if(!ISA9LH || updateFirm1) writeFirm((u8 *)FIRM1_OFFSET, true, FIRM1_SIZE);
+    if(!ISA9LH || updateKey2 || isOtpless) sdmmc_nand_writesectors(0x96, 1, keySector);
 
-    if(!isA9lh && isN3DS)
+    if(!ISA9LH && ISN3DS)
     {
         *(vu32 *)0x80FD0FC = 0xEAFFCBBF; //B 0x80F0000
         memcpy((void *)0x80F0000, loader_bin, loader_bin_size);
@@ -241,7 +260,7 @@ static inline void installer(bool isA9lh, bool isOtpless)
 
     writeFirm((u8 *)FIRM0_OFFSET, false, FIRM0_SIZE);
 
-    shutdown(2, isA9lh && !isOtpless ? "Update: success!" : "Full install: success!");
+    shutdown(2, ISA9LH && !isOtpless ? "Update: success!" : "Full install: success!");
 }
 
 static inline void uninstaller(void)
@@ -253,7 +272,7 @@ static inline void uninstaller(void)
     inputSequence();
 
     //New 3DSes need a key sector with a proper key2, Old 3DSes have a blank key sector
-    if(isN3DS)
+    if(ISN3DS)
     {
         setupKeyslot0x11(NULL, true);
         getSector(keySector, true);
@@ -286,7 +305,8 @@ static inline void uninstaller(void)
     }
 
     //Decrypt it and get its size
-    u32 firmSize = decryptExeFs((u8 *)FIRM0_OFFSET);
+    u32 firmSize = decryptExeFs((Cxi *)FIRM0_OFFSET);
+    if(firmSize == 0) shutdown(1, "Error: couldn't decrypt the CTRNAND FIRM");
 
     //writeFirm encrypts in-place, so we need two copies
     memcpy((void *)FIRM1_OFFSET, (void *)FIRM0_OFFSET, firmSize);

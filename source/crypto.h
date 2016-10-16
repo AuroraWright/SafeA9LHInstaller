@@ -79,9 +79,6 @@
 #define SHA_224_HASH_SIZE	(224 / 8)
 #define SHA_1_HASH_SIZE		(160 / 8)
 
-extern bool isN3DS;
-const u8 key2s[3][AES_BLOCK_SIZE];
-
 void getNandCtr(void);
 void ctrNandInit(void);
 int ctrNandRead(u32 sector, u32 sectorCount, u8 *outbuf);
@@ -91,4 +88,4 @@ void setupKeyslot0x11(const void *otp, bool isA9lh);
 void generateSector(u8 *keySector, u32 mode);
 void getSector(u8 *keySector, bool isA9lh);
 bool verifyHash(const void *data, u32 size, const u8 *hash);
-u32 decryptExeFs(u8 *inbuf);
+u32 decryptExeFs(Cxi *cxi);

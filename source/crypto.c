@@ -275,10 +275,12 @@ static void sha(void *res, const void *src, u32 size, u32 mode)
 static u8 __attribute__((aligned(4))) nandCtr[AES_BLOCK_SIZE];
 static u8 nandSlot;
 static u32 fatStart;
-const u8 __attribute__((aligned(4))) key2s[3][AES_BLOCK_SIZE] = {
+const u8 __attribute__((aligned(4))) key2s[5][AES_BLOCK_SIZE] = {
     {0x42, 0x3F, 0x81, 0x7A, 0x23, 0x52, 0x58, 0x31, 0x6E, 0x75, 0x8E, 0x3A, 0x39, 0x43, 0x2E, 0xD0},
+    {0x08, 0x24, 0xD3, 0xCB, 0x4A, 0xE9, 0x4D, 0x62, 0x4D, 0xAA, 0x52, 0x60, 0x47, 0xC5, 0x93, 0x94},
+    {0x65, 0x29, 0x3E, 0x12, 0x56, 0x0C, 0x0B, 0xD1, 0xDD, 0xB5, 0x63, 0x1C, 0xB6, 0xD9, 0x52, 0x75},
     {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x3B, 0xF5, 0xF6},
-    {0x65, 0x29, 0x3E, 0x12, 0x56, 0x0C, 0x0B, 0xD1, 0xDD, 0xB5, 0x63, 0x1C, 0xB6, 0xD9, 0x52, 0x75}
+    {0xA5, 0x25, 0x87, 0x11, 0x8F, 0x42, 0x9F, 0x3D, 0x65, 0x1D, 0xDD, 0x58, 0x0B, 0x6D, 0xF2, 0x17}
 };
 
 void getNandCtr(void)
@@ -295,7 +297,7 @@ void ctrNandInit(void)
 {
     getNandCtr();
 
-    if(isN3DS)
+    if(ISN3DS)
     {
         u8 __attribute__((aligned(4))) keyY0x5[AES_BLOCK_SIZE] = {0x4D, 0x80, 0x4F, 0x4E, 0x99, 0x90, 0x19, 0x46, 0x13, 0xA2, 0x04, 0xAC, 0x58, 0x44, 0x60, 0xBE};
         aes_setkey(0x05, keyY0x5, AES_KEYY, AES_INPUT_BE | AES_INPUT_NORMAL);
@@ -382,7 +384,7 @@ void generateSector(u8 *keySector, u32 mode)
             memcpy(keySector + AES_BLOCK_SIZE, key2s[0], AES_BLOCK_SIZE);
             break;
         default:
-            memcpy(keySector + AES_BLOCK_SIZE, key2s[2], AES_BLOCK_SIZE);
+            memcpy(keySector + AES_BLOCK_SIZE, key2s[1], AES_BLOCK_SIZE);
             break;
     }
 
@@ -417,20 +419,27 @@ bool verifyHash(const void *data, u32 size, const u8 *hash)
     return memcmp(shasum, hash, sizeof(shasum)) == 0;
 }
 
-u32 decryptExeFs(u8 *inbuf)
+u32 decryptExeFs(Cxi *cxi)
 {
-    u8 *exeFsOffset = inbuf + *(u32 *)(inbuf + 0x1A0) * 0x200;
-    u32 exeFsSize = *(u32 *)(inbuf + 0x1A4) * 0x200;
-    u8 __attribute__((aligned(4))) ncchCtr[AES_BLOCK_SIZE] = {0};
+    u32 exeFsSize = 0;
 
-    for(u32 i = 0; i < 8; i++)
-        ncchCtr[7 - i] = *(inbuf + 0x108 + i);
-    ncchCtr[8] = 2;
+    if(memcmp(cxi->ncch.magic, "NCCH", 4) == 0)
+    {
+        u8 *exeFsOffset = (u8 *)cxi + (cxi->ncch.exeFsOffset + 1) * 0x200;
+        exeFsSize = (cxi->ncch.exeFsSize - 1) * 0x200;
+        u8 __attribute__((aligned(4))) ncchCtr[AES_BLOCK_SIZE] = {0};
 
-    aes_setkey(0x2C, inbuf, AES_KEYY, AES_INPUT_BE | AES_INPUT_NORMAL);
-    aes_advctr(ncchCtr, 0x200 / AES_BLOCK_SIZE, AES_INPUT_BE | AES_INPUT_NORMAL);
-    aes_use_keyslot(0x2C);
-    aes(inbuf, exeFsOffset + 0x200, exeFsSize / AES_BLOCK_SIZE, ncchCtr, AES_CTR_MODE, AES_INPUT_BE | AES_INPUT_NORMAL);
+        for(u32 i = 0; i < 8; i++)
+            ncchCtr[7 - i] = cxi->ncch.partitionId[i];
+        ncchCtr[8] = 2;
 
-    return exeFsSize - 0x200;
+        aes_setkey(0x2C, cxi, AES_KEYY, AES_INPUT_BE | AES_INPUT_NORMAL);
+        aes_advctr(ncchCtr, 0x200 / AES_BLOCK_SIZE, AES_INPUT_BE | AES_INPUT_NORMAL);
+        aes_use_keyslot(0x2C);
+        aes(cxi, exeFsOffset, exeFsSize / AES_BLOCK_SIZE, ncchCtr, AES_CTR_MODE, AES_INPUT_BE | AES_INPUT_NORMAL);
+
+        if(memcmp(cxi, "FIRM", 4) != 0) exeFsSize = 0;
+    }
+
+    return exeFsSize;
 }

@@ -23,5 +23,7 @@
 #define MAX_STAGE1_SIZE   0x1E70
 #define MAX_STAGE2_SIZE   0x89A00
 
-static inline void installer(bool isA9lh, bool isOtpless);
+extern const u8 key2s[5][AES_BLOCK_SIZE];
+
+static inline void installer(bool isOtpless);
 static inline void uninstaller(void);

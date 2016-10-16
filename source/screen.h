@@ -30,6 +30,8 @@
 
 #define PDN_GPU_CNT (*(vu8 *)0x10141200)
 
+#define ARESCREENSINITED (PDN_GPU_CNT != 1)
+
 #define BRAHMA_ARM11_ENTRY 0x1FFFFFF8
 #define WAIT_FOR_ARM9()    *arm11Entry = 0; while(!*arm11Entry); ((void (*)())*arm11Entry)();
 
