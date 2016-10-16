@@ -276,8 +276,13 @@ static inline void uninstaller(void)
     {
         setupKeyslot0x11(NULL, true);
         getSector(keySector, true);
-        if(memcmp(keySector + AES_BLOCK_SIZE, key2s[1], AES_BLOCK_SIZE) != 0 && memcmp(keySector + AES_BLOCK_SIZE, key2s[2], AES_BLOCK_SIZE) != 0)
-            shutdown(1, "Error: the OTP hash or the NAND key sector\nare invalid");
+
+        u32 i;
+        for(i = 1; i < 5; i++)
+            if(memcmp(keySector + AES_BLOCK_SIZE, key2s[i], AES_BLOCK_SIZE) == 0) break;
+
+        if(i == 5) shutdown(1, "Error: the OTP hash or the NAND key sector\nare invalid");
+
         generateSector(keySector, 2);
     }
     else memset32(keySector, 0, sizeof(keySector));
