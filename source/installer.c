@@ -301,7 +301,7 @@ static inline void uninstaller(void)
     switch(result)
     {
         case 1:
-            shutdown(1, "Error: more than one FIRM cxi has been detected");
+            shutdown(1, "Error: more than one FIRM has been detected");
             break;
         case 5:
             posY = drawString("FIRM 11.0 or 11.1 has been detected!", 10, posY + SPACING_Y, COLOR_RED);
@@ -310,14 +310,13 @@ static inline void uninstaller(void)
 
             if(waitInput() == BUTTON_SELECT)
             {
-                const char *firm104Path = "a9lh/firm104.bin";
                 u32 firm104Size = ISN3DS ? 0xF2000 : 0xEA000;
 
                 unmountCtrNand();
 
                 if(!mountFs(true)) shutdown(1, "Error: failed to mount the SD card");
 
-                if(fileRead((void *)FIRM0_OFFSET, firm104Path, firm104Size) != firm104Size)
+                if(fileRead((void *)FIRM0_OFFSET, "a9lh/firm104.bin", firm104Size) != firm104Size)
                     shutdown(1, "Error: firm104.bin doesn't exist or has a wrong size");
 
                 if(!verifyHash((void *)FIRM0_OFFSET, firm104Size, ISN3DS ? firm104N3DSHash : firm104O3DSHash))
