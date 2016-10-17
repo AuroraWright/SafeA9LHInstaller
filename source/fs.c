@@ -131,7 +131,7 @@ u32 firmRead(void *dest)
 
         f_closedir(&dir);
 
-        if(!ret && firmVersion != 0xFFFFFFFF)
+        if(ret != 1 && firmVersion != 0xFFFFFFFF)
         {
             //Complete the string with the .app name
             concatenateStrings(path, "/00000000.app");
