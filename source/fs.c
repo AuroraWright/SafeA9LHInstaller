@@ -32,6 +32,11 @@ bool mountFs(bool isSd)
     return isSd ? f_mount(&fs, "0:", 1) == FR_OK : f_mount(&fs, "1:", 1) == FR_OK;
 }
 
+void unmountCtrNand(void)
+{
+    f_mount(NULL, "1:", 1);
+}
+
 u32 fileRead(void *dest, const char *path, u32 maxSize)
 {
     FIL file;
@@ -118,7 +123,7 @@ u32 firmRead(void *dest)
             }
 
             //FIRM is equal or newer than 11.0
-            if(tempVersion >= (ISN3DS ? 0x21 : 0x52)) ret = 2;
+            if(tempVersion >= (ISN3DS ? 0x21 : 0x52)) ret = tempVersion <= (ISN3DS ? 0x26 : 0x56) ? 5 : 2;
 
             //Found an older cxi
             if(tempVersion < firmVersion) firmVersion = tempVersion;
@@ -132,7 +137,7 @@ u32 firmRead(void *dest)
             concatenateStrings(path, "/00000000.app");
 
             //Convert back the .app name from integer to array
-            hexItoa(firmVersion, &path[35], 8);
+            hexItoa(firmVersion, path + 35, 8);
 
             if(!fileRead(dest, path, 0x100000)) ret = 3;
         }

@@ -36,6 +36,14 @@ static const u8 sectorHash[SHA_256_HASH_SIZE] = {
                 firm1Hash[SHA_256_HASH_SIZE] = {
     0xD2, 0x53, 0xC1, 0xCC, 0x0A, 0x5F, 0xFA, 0xC6, 0xB3, 0x83, 0xDA, 0xC1, 0x82, 0x7C, 0xFB, 0x3B,
     0x2D, 0x3D, 0x56, 0x6C, 0x6A, 0x1A, 0x8E, 0x52, 0x54, 0xE3, 0x89, 0xC2, 0x95, 0x06, 0x23, 0xE5
+},
+                firm104O3DSHash[SHA_256_HASH_SIZE] = {
+    0x5D, 0x33, 0xD9, 0xCE, 0xE3, 0x39, 0x05, 0xD5, 0xCE, 0x37, 0xFE, 0xFB, 0xB5, 0xEC, 0x73, 0x6A,
+    0xA0, 0x10, 0xAD, 0x87, 0xF8, 0xDC, 0x55, 0x39, 0xFD, 0xDB, 0x48, 0x69, 0xAC, 0x5F, 0x3C, 0x2B
+},
+                firm104N3DSHash[SHA_256_HASH_SIZE] = {
+    0x2D, 0x6B, 0xCC, 0xCE, 0x3B, 0x81, 0xD7, 0xCA, 0x67, 0x17, 0x90, 0x33, 0x35, 0x4D, 0xFA, 0xA5,
+    0x70, 0xF4, 0x7A, 0x99, 0xBB, 0x60, 0x0C, 0x2F, 0x34, 0x90, 0xFF, 0x10, 0xD4, 0x4C, 0x97, 0x42
 };
 
 u32 posY;
@@ -47,8 +55,8 @@ void main(void)
 
     initScreens();
 
-    drawString(TITLE, 10, 10, COLOR_TITLE);
-    posY = drawString("Thanks to delebile, #cakey and StandardBus", 10, 40, COLOR_WHITE);
+    posY = drawString(TITLE, 10, 10, COLOR_TITLE);
+    posY = drawString("Thanks to delebile, #cakey and StandardBus", 10, posY + SPACING_Y, COLOR_WHITE);
 
     if(!sdmmc_sdcard_init(isOtpless))
         shutdown(1, "Error: failed to initialize SD and NAND");
@@ -235,7 +243,7 @@ static inline void installer(bool isOtpless)
 
         if(missingStage1Hash || missingStage2Hash)
         {
-            posY = drawString("Couldn't verify stage1 and/or stage2 integrity!", 10, posY + 10, COLOR_RED);
+            posY = drawString("Couldn't verify stage1 and/or stage2 integrity!", 10, posY + SPACING_Y, COLOR_RED);
             posY = drawString("Continuing might be dangerous!", 10, posY, COLOR_RED);
             inputSequence();
         }
@@ -267,10 +275,6 @@ static inline void uninstaller(void)
 {
     u8 keySector[512];
 
-    posY = drawString("You are about to uninstall A9LH!", 10, posY + 10, COLOR_RED);
-    posY = drawString("Doing this will require having 9.0 to reinstall!", 10, posY, COLOR_RED);
-    inputSequence();
-
     //New 3DSes need a key sector with a proper key2, Old 3DSes have a blank key sector
     if(ISN3DS)
     {
@@ -291,13 +295,41 @@ static inline void uninstaller(void)
         shutdown(1, "Error: failed to mount CTRNAND");
 
     //Read FIRM cxi from CTRNAND
-    switch(firmRead((void *)FIRM0_OFFSET))
+    u32 firmSize = 0,
+        result = firmRead((void *)FIRM0_OFFSET);
+
+    switch(result)
     {
         case 1:
             shutdown(1, "Error: more than one FIRM cxi has been detected");
             break;
+        case 5:
+            posY = drawString("FIRM 11.0 or 11.1 has been detected!", 10, posY + SPACING_Y, COLOR_RED);
+            posY = drawString("Press SELECT to load 10.4 FIRM from SD", 10, posY + SPACING_Y, COLOR_WHITE);
+            posY = drawString("Press any other button to load FIRM from CTRNAND", 10, posY, COLOR_RED);
+
+            if(waitInput() == BUTTON_SELECT)
+            {
+                const char *firm104Path = "a9lh/firm104.bin";
+                u32 firm104Size = ISN3DS ? 0xF2000 : 0xEA000;
+
+                unmountCtrNand();
+
+                if(!mountFs(true)) shutdown(1, "Error: failed to mount the SD card");
+
+                if(fileRead((void *)FIRM0_OFFSET, firm104Path, firm104Size) != firm104Size)
+                    shutdown(1, "Error: firm104.bin doesn't exist or has a wrong size");
+
+                if(!verifyHash((void *)FIRM0_OFFSET, firm104Size, ISN3DS ? firm104N3DSHash : firm104O3DSHash))
+                    shutdown(1, "Error: firm104.bin is invalid or corrupted");
+
+                firmSize = firm104Size;
+                break;
+            }
         case 2:
-            shutdown(1, "Error: a FIRM equal or newer than 11.0\nhas been detected");
+            if(result == 2) posY = drawString("A FIRM newer than 11.1 has been detected!", 10, posY + SPACING_Y, COLOR_RED);
+            posY = drawString("You are about to uninstall A9LH!", 10, posY + SPACING_Y, COLOR_RED);
+            posY = drawString("To reinstall you'll need an hardmod or a DSi dg!", 10, posY, COLOR_RED);
             break;
         case 3:
             shutdown(1, "Error: the CTRNAND FIRM is too large");
@@ -309,9 +341,20 @@ static inline void uninstaller(void)
             break;
     }
 
+    if(firmSize != 0 || !result)
+    {
+        posY = drawString("You are about to uninstall A9LH!", 10, posY + SPACING_Y, COLOR_RED);
+        posY = drawString("To reinstall you'll need 9.2 or lower!", 10, posY, COLOR_RED);
+    }
+
+    inputSequence();
+
     //Decrypt it and get its size
-    u32 firmSize = decryptExeFs((Cxi *)FIRM0_OFFSET);
-    if(firmSize == 0) shutdown(1, "Error: couldn't decrypt the CTRNAND FIRM");
+    if(!firmSize)
+    {
+        firmSize = decryptExeFs((Cxi *)FIRM0_OFFSET);
+        if(firmSize == 0) shutdown(1, "Error: couldn't decrypt the CTRNAND FIRM");
+    }
 
     //writeFirm encrypts in-place, so we need two copies
     memcpy((void *)FIRM1_OFFSET, (void *)FIRM0_OFFSET, firmSize);
