@@ -43,11 +43,22 @@ void concatenateStrings(char *destination, const char *source)
 void hexItoa(u32 number, char *out, u32 digits)
 {
     const char hexDigits[] = "0123456789ABCDEF";
-    u32 i = 0;
+    u32 i;
 
-    while(number > 0)
+    for(i = 0; number > 0; i++)
     {
-        out[digits - 1 - i++] = hexDigits[number & 0xF];
+        out[digits - 1 - i] = hexDigits[number & 0xF];
         number >>= 4;
     }
+}
+
+u32 hexAtoi(const char *in, u32 digits)
+{
+    u32 res = 0;
+    char *tmp = (char *)in;
+
+    for(u32 i = 0; i < digits && *tmp != 0; tmp++, i++)
+        res = (*tmp > '9' ? *tmp - 'A' + 10 : *tmp - '0') + (res << 4);
+
+    return res;
 }

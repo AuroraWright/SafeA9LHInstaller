@@ -40,9 +40,10 @@ void unmountCtrNand(void)
 u32 fileRead(void *dest, const char *path, u32 maxSize)
 {
     FIL file;
-    u32 ret = 0;
+    u32 ret;
 
-    if(f_open(&file, path, FA_READ) == FR_OK)
+    if(f_open(&file, path, FA_READ) != FR_OK) ret = 0;
+    else
     {
         u32 size = f_size(&file);
         if(size <= maxSize)
@@ -98,13 +99,14 @@ u32 firmRead(void *dest)
     concatenateStrings(path, "/content");
 
     DIR dir;
-    FILINFO info;
 
     u32 firmVersion = 0xFFFFFFFF,
         ret = 0;
 
     if(f_opendir(&dir, path) == FR_OK)
     {
+        FILINFO info;
+
         //Parse the target directory
         while(f_readdir(&dir, &info) == FR_OK && info.fname[0] != 0)
         {
@@ -114,13 +116,7 @@ u32 firmRead(void *dest)
             //Multiple cxis were found
             if(firmVersion != 0xFFFFFFFF) ret = 1;
 
-            //Convert the .app name to an integer
-            u32 tempVersion = 0;
-            for(char *tmp = info.altname; *tmp != '.'; tmp++)
-            {
-                tempVersion <<= 4;
-                tempVersion += *tmp > '9' ? *tmp - 'A' + 10 : *tmp - '0';
-            }
+            u32 tempVersion = hexAtoi(info.altname, 8);
 
             //FIRM is equal or newer than 11.0
             if(tempVersion >= (ISN3DS ? 0x21 : 0x52)) ret = tempVersion <= (ISN3DS ? 0x26 : 0x56) ? 5 : 2;
