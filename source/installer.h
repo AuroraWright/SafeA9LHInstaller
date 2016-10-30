@@ -6,9 +6,6 @@
 
 #include "types.h"
 
-#define PDN_MPCORE_CFG (*(vu32 *)0x10140FFC)
-#define PDN_SPI_CNT    (*(vu32 *)0x101401C0)
-
 #define OTP_FROM_MEM      0x10012000
 #define FIRM0_OFFSET      0x24000000
 #define SECTION2_POSITION 0x66A00
