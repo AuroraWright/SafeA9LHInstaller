@@ -24,6 +24,13 @@
 .align 4
 .global _start
 _start:
+    b start
+
+.global magic
+magic:
+    .word 0
+
+start:
     @ Disable interrupts
     mrs r0, cpsr
     orr r0, #0x1C0

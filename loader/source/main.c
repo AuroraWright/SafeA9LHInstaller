@@ -20,7 +20,6 @@
 *   Notices displayed by works containing it.
 */
 
-#include "cache.h"
 #include "memory.h"
 #include "../build/bundled.h"
 
@@ -42,12 +41,12 @@ void main(void)
 {
     ownArm11();
 
-    vu32 *magic = (vu32 *)0x25000000;
-    magic[0] = 0xABADCAFE;
-    magic[1] = 0xDEADCAFE;
+    vu32 *payloadAddress = (vu32 *)0x23F00000;
+    payloadAddress[1] = 0xDEADCAFE;
 
     //Ensure that all memory transfers have completed and that the caches have been flushed
-    flushCaches();
+    ((void (*)())0xFFFF0830)();
+    ((void (*)())0xFFFF0AB4)();
 
-    ((void (*)())0x23F00000)();
+    ((void (*)())payloadAddress)();
 }

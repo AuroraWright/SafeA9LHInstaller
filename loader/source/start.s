@@ -39,9 +39,6 @@ _start:
     bic r0, #(1<<0)            @ - mpu disable
     mcr p15, 0, r0, c1, c0, 0  @ write control register
 
-    @ Flush caches
-    bl flushCaches
-
     @ Give read/write access to all the memory regions
     ldr r0, =0x3333333
     mcr p15, 0, r0, c5, c0, 2 @ write data access
@@ -69,10 +66,14 @@ _start:
     mcr p15, 0, r8, c2, c0, 0   @ Data cacheable 0, 2, 4
     mcr p15, 0, r8, c2, c0, 1   @ Inst cacheable 0, 2, 4
 
-    @ Enable caches / MPU / ITCM
+    @ Flush caches
+    ldr r0, =0xFFFF0830
+    blx r0
+    ldr r0, =0xFFFF0AB4
+    blx r0
+
+    @ Enable caches / MPU
     mrc p15, 0, r0, c1, c0, 0  @ read control register
-    orr r0, r0, #(1<<18)       @ - ITCM enable
-    orr r0, r0, #(1<<13)       @ - alternate exception vectors enable
     orr r0, r0, #(1<<12)       @ - instruction cache enable
     orr r0, r0, #(1<<2)        @ - data cache enable
     orr r0, r0, #(1<<0)        @ - mpu enable

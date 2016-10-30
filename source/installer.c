@@ -50,8 +50,7 @@ u32 posY;
 
 void main(void)
 {
-    vu32 *magic = (vu32 *)0x25000000;
-    bool isOtpless = ISA9LH && magic[0] == 0xABADCAFE && magic[1] == 0xDEADCAFE;
+    bool isOtpless = ISA9LH && magic == 0xDEADCAFE;
 
     initScreens();
 
@@ -71,7 +70,6 @@ void main(void)
     }
     else
     {
-        magic[0] = magic[1] = 0;
         posY = drawString("Finalizing install...", 10, posY + SPACING_Y, COLOR_WHITE);
         pressed = 0;
     }
@@ -258,8 +256,10 @@ static inline void installer(bool isOtpless)
 
     if(!ISA9LH && ISN3DS)
     {
-        *(vu32 *)0x80FD0FC = 0xEAFFCBBF; //B 0x80F0000
-        memcpy((void *)0x80F0000, loader_bin, loader_bin_size);
+        const u8 ldrAndBranch[] = {0x00, 0x00, 0x9F, 0xE5, 0x10, 0xFF, 0x2F, 0xE1, 0x00, 0x80, 0xFF, 0x01};
+
+        memcpy((void *)0x80FD0FC, ldrAndBranch, sizeof(ldrAndBranch));
+        memcpy((void *)0x1FF8000, loader_bin, loader_bin_size);
 
         writeFirm((u8 *)FIRM0_100_OFFSET, false, FIRM0100_SIZE);
 
