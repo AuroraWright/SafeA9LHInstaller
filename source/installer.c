@@ -13,15 +13,15 @@
 #include "fatfs/sdmmc/sdmmc.h"
 #include "../build/bundled.h"
 
-static const u8 sectorHash[SHA_256_HASH_SIZE] = {
+static const u8 sectorHashRetail[SHA_256_HASH_SIZE] = {
     0x82, 0xF2, 0x73, 0x0D, 0x2C, 0x2D, 0xA3, 0xF3, 0x01, 0x65, 0xF9, 0x87, 0xFD, 0xCC, 0xAC, 0x5C,
     0xBA, 0xB2, 0x4B, 0x4E, 0x5F, 0x65, 0xC9, 0x81, 0xCD, 0x7B, 0xE6, 0xF4, 0x38, 0xE6, 0xD9, 0xD3
 },
-                firm0Hash[SHA_256_HASH_SIZE] = {
+                firm0HashRetail[SHA_256_HASH_SIZE] = {
     0x6E, 0x4D, 0x14, 0xAD, 0x51, 0x50, 0xA5, 0x9A, 0x87, 0x59, 0x62, 0xB7, 0x09, 0x0A, 0x3C, 0x74,
     0x4F, 0x72, 0x4B, 0xBD, 0x97, 0x39, 0x33, 0xF2, 0x11, 0xC9, 0x35, 0x22, 0xC8, 0xBB, 0x1C, 0x7D
 },
-                firm0A9lhHash[SHA_256_HASH_SIZE] = {
+                firm0A9lhHashRetail[SHA_256_HASH_SIZE] = {
     0x79, 0x3D, 0x35, 0x7B, 0x8F, 0xF1, 0xFC, 0xF0, 0x8F, 0xB6, 0xDB, 0x51, 0x31, 0xD4, 0xA7, 0x74,
     0x8E, 0xF0, 0x4A, 0xB1, 0xA6, 0x7F, 0xCD, 0xAB, 0x0C, 0x0A, 0xC0, 0x69, 0xA7, 0x9D, 0xC5, 0x04
 },
@@ -33,7 +33,7 @@ static const u8 sectorHash[SHA_256_HASH_SIZE] = {
     0xD8, 0x2D, 0xB7, 0xB4, 0x38, 0x2B, 0x07, 0x88, 0x99, 0x77, 0x91, 0x0C, 0xC6, 0xEC, 0x6D, 0x87,
     0x7D, 0x21, 0x79, 0x23, 0xD7, 0x60, 0xAF, 0x4E, 0x8B, 0x3A, 0xAB, 0xB2, 0x63, 0xE4, 0x21, 0xC6
 },
-                firm1Hash[SHA_256_HASH_SIZE] = {
+                firm1HashRetail[SHA_256_HASH_SIZE] = {
     0xD2, 0x53, 0xC1, 0xCC, 0x0A, 0x5F, 0xFA, 0xC6, 0xB3, 0x83, 0xDA, 0xC1, 0x82, 0x7C, 0xFB, 0x3B,
     0x2D, 0x3D, 0x56, 0x6C, 0x6A, 0x1A, 0x8E, 0x52, 0x54, 0xE3, 0x89, 0xC2, 0x95, 0x06, 0x23, 0xE5
 },
@@ -44,6 +44,22 @@ static const u8 sectorHash[SHA_256_HASH_SIZE] = {
                 firm104N3DSHash[SHA_256_HASH_SIZE] = {
     0x2D, 0x6B, 0xCC, 0xCE, 0x3B, 0x81, 0xD7, 0xCA, 0x67, 0x17, 0x90, 0x33, 0x35, 0x4D, 0xFA, 0xA5,
     0x70, 0xF4, 0x7A, 0x99, 0xBB, 0x60, 0x0C, 0x2F, 0x34, 0x90, 0xFF, 0x10, 0xD4, 0x4C, 0x97, 0x42
+},
+                sectorHashDev[SHA_256_HASH_SIZE] = {
+    0xB2, 0x91, 0xD9, 0xB1, 0x33, 0x05, 0x79, 0x0D, 0x47, 0xC6, 0x06, 0x98, 0x4C, 0x67, 0xC3, 0x70, 
+    0x09, 0x54, 0xE3, 0x85, 0xDE, 0x47, 0x55, 0xAF, 0xC6, 0xCB, 0x1D, 0x8D, 0xC7, 0x84, 0x5A, 0x64
+},
+                firm0HashDev[SHA_256_HASH_SIZE] = {
+    0xCD, 0x62, 0xA6, 0x58, 0x40, 0x1B, 0x8B, 0x8F, 0xD3, 0x2C, 0x72, 0x58, 0xD8, 0x24, 0x21, 0x36,
+    0xCF, 0x83, 0x40, 0xA3, 0x34, 0x8E, 0xED, 0x33, 0x0A, 0x1A, 0x16, 0x04, 0x49, 0xC9, 0x74, 0x3E
+},
+                firm0A9lhHashDev[SHA_256_HASH_SIZE] = {
+    0x60, 0xBB, 0xD1, 0x35, 0x44, 0x2F, 0xBD, 0x47, 0x69, 0xBF, 0x36, 0x4B, 0x0B, 0x79, 0x6E, 0x4C,
+    0xE1, 0xB2, 0xDB, 0x7A, 0xAD, 0xF0, 0x04, 0x31, 0xCB, 0xBD, 0x54, 0xD3, 0x99, 0x8C, 0x9C, 0xD2
+},
+                firm1HashDev[SHA_256_HASH_SIZE] = {
+    0xCD, 0x87, 0x85, 0x33, 0x76, 0xCA, 0x2A, 0x3F, 0xFC, 0x24, 0x4C, 0x29, 0x95, 0x8B, 0xA8, 0x34,
+    0xF2, 0x38, 0x14, 0x58, 0x10, 0x83, 0x56, 0x4F, 0x0D, 0x5A, 0xDB, 0x29, 0x12, 0xD8, 0xA9, 0x84
 };
 
 u32 posY;
@@ -92,7 +108,7 @@ static inline void installer(bool isOtpless)
         shutdown(1, "Error: failed to mount the SD card");
 
     //If making a first install on O3DS, we need the OTP
-    if(!ISA9LH && !ISN3DS)
+    if(!ISA9LH && (ISDEVUNIT || !ISN3DS))
     {
         const char otpPath[] = "a9lh/otp.bin";
 
@@ -112,7 +128,7 @@ static inline void installer(bool isOtpless)
     }
 
     //Setup the key sector de/encryption with the SHA register or otp.bin
-    if(ISA9LH || !ISN3DS) setupKeyslot0x11(otp, ISA9LH);
+    if(ISA9LH || (!ISDEVUNIT && !ISN3DS)) setupKeyslot0x11(otp);
 
     //Calculate the CTR for the 3DS partitions
     getNandCtr();
@@ -126,21 +142,26 @@ static inline void installer(bool isOtpless)
     }
 
     //If booting from A9LH or on N3DS, we can use the key sector from NAND
-    if(ISA9LH || ISN3DS) getSector(keySector, ISA9LH);
+    if(ISA9LH || ISN3DS) getSector(keySector);
     else
     {
          //Read decrypted key sector
          if(fileRead(keySector, "a9lh/secret_sector.bin", sizeof(keySector)) != sizeof(keySector))
              shutdown(1, "Error: secret_sector.bin doesn't exist or has\na wrong size");
-         if(!verifyHash(keySector, sizeof(keySector), sectorHash))
+         if(!verifyHash(keySector, sizeof(keySector), !ISDEVUNIT ? sectorHashRetail : sectorHashDev))
              shutdown(1, "Error: secret_sector.bin is invalid or corrupted");
     }
 
     if(ISA9LH && !isOtpless)
     {
         u32 i;
-        for(i = 1; i < 5; i++)
-            if(memcmp(keySector + AES_BLOCK_SIZE, key2s[i], AES_BLOCK_SIZE) == 0) break;
+
+        if(!ISDEVUNIT)
+        {
+            for(i = 1; i < 5; i++)
+                if(memcmp(keySector + AES_BLOCK_SIZE, key2s[i], AES_BLOCK_SIZE) == 0) break;
+        }
+        else i = memcmp(keySector + AES_BLOCK_SIZE, devKey2s[1], AES_BLOCK_SIZE) == 0 ? 1 : 5;
 
         switch(i)
         {
@@ -159,18 +180,18 @@ static inline void installer(bool isOtpless)
                 break;
         }
 
-        if(!verifyHash((void *)FIRM0_OFFSET, SECTION2_POSITION, firm0A9lhHash))
+        if(!verifyHash((void *)FIRM0_OFFSET, SECTION2_POSITION, !ISDEVUNIT ? firm0A9lhHashRetail : firm0A9lhHashDev))
         {
-            if(!verifyHash((void *)FIRM0_OFFSET, SECTION2_POSITION, firm090A9lhHash))
+            if(ISDEVUNIT || !verifyHash((void *)FIRM0_OFFSET, SECTION2_POSITION, firm090A9lhHash))
                 shutdown(1, "Error: NAND FIRM0 is invalid");
 
             updateFirm0 = true;
         }
     }
 
-    if(!ISA9LH || updateKey2 || isOtpless) generateSector(keySector, (!ISA9LH && ISN3DS) ? 1 : 0);
+    if(!ISA9LH || updateKey2 || isOtpless) generateSector(keySector, (!ISA9LH && ISN3DS && !ISDEVUNIT) ? 1 : 0);
 
-    if(!ISA9LH && ISN3DS)
+    if(!ISA9LH && ISN3DS && !ISDEVUNIT)
     {
         //Read 10.0 FIRM0
         if(fileRead((void *)FIRM0_100_OFFSET, "a9lh/firm0_100.bin", FIRM0100_SIZE) != FIRM0100_SIZE)
@@ -184,7 +205,7 @@ static inline void installer(bool isOtpless)
         //Read FIRM0
         if(fileRead((void *)FIRM0_OFFSET, "a9lh/firm0.bin", FIRM0_SIZE) != FIRM0_SIZE)
             shutdown(1, "Error: firm0.bin doesn't exist or has a wrong size");
-        if(!verifyHash((void *)FIRM0_OFFSET, FIRM0_SIZE, firm0Hash))
+        if(!verifyHash((void *)FIRM0_OFFSET, FIRM0_SIZE, !ISDEVUNIT ? firm0HashRetail : firm0HashDev))
             shutdown(1, "Error: firm0.bin is invalid or corrupted");
     }
 
@@ -193,7 +214,7 @@ static inline void installer(bool isOtpless)
         //Read FIRM1
         if(fileRead((void *)FIRM1_OFFSET, "a9lh/firm1.bin", FIRM1_SIZE) != FIRM1_SIZE)
             shutdown(1, "Error: firm1.bin doesn't exist or has a wrong size");
-        if(!verifyHash((void *)FIRM1_OFFSET, FIRM1_SIZE, firm1Hash))
+        if(!verifyHash((void *)FIRM1_OFFSET, FIRM1_SIZE, !ISDEVUNIT ? firm1HashRetail : firm1HashDev))
             shutdown(1, "Error: firm1.bin is invalid or corrupted");
     }
 
@@ -254,7 +275,7 @@ static inline void installer(bool isOtpless)
     if(!ISA9LH || updateFirm1) writeFirm((u8 *)FIRM1_OFFSET, true, FIRM1_SIZE);
     if(!ISA9LH || updateKey2 || isOtpless) sdmmc_nand_writesectors(0x96, 1, keySector);
 
-    if(!ISA9LH && ISN3DS)
+    if(!ISA9LH && ISN3DS && !ISDEVUNIT)
     {
         const u8 ldrAndBranch[] = {0x00, 0x00, 0x9F, 0xE5, 0x10, 0xFF, 0x2F, 0xE1, 0x00, 0x80, 0xFF, 0x01};
 
@@ -278,12 +299,17 @@ static inline void uninstaller(void)
     //New 3DSes need a key sector with a proper key2, Old 3DSes have a blank key sector
     if(ISN3DS)
     {
-        setupKeyslot0x11(NULL, true);
-        getSector(keySector, true);
+        setupKeyslot0x11(NULL);
+        getSector(keySector);
 
         u32 i;
-        for(i = 1; i < 5; i++)
-            if(memcmp(keySector + AES_BLOCK_SIZE, key2s[i], AES_BLOCK_SIZE) == 0) break;
+
+        if(!ISDEVUNIT)
+        {
+            for(i = 1; i < 5; i++)
+                if(memcmp(keySector + AES_BLOCK_SIZE, key2s[i], AES_BLOCK_SIZE) == 0) break;
+        }
+        else i = memcmp(keySector + AES_BLOCK_SIZE, devKey2s[1], AES_BLOCK_SIZE) == 0 ? 1 : 5;
 
         if(i == 5) shutdown(1, "Error: the OTP hash or the NAND key sector\nare invalid");
 

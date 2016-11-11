@@ -283,6 +283,11 @@ const u8 __attribute__((aligned(4))) key2s[5][AES_BLOCK_SIZE] = {
     {0xA5, 0x25, 0x87, 0x11, 0x8F, 0x42, 0x9F, 0x3D, 0x65, 0x1D, 0xDD, 0x58, 0x0B, 0x6D, 0xF2, 0x17}
 };
 
+const u8 __attribute__((aligned(4))) devKey2s[2][AES_BLOCK_SIZE] = {
+    {0xFF, 0x77, 0xA0, 0x9A, 0x99, 0x81, 0xE9, 0x48, 0xEC, 0x51, 0xC9, 0x32, 0x5D, 0x14, 0xEC, 0x25},
+    {0x59, 0x5B, 0x98, 0x5B, 0xD7, 0x74, 0x58, 0x7F, 0x89, 0x30, 0x85, 0x70, 0xD6, 0x24, 0x49, 0x1E}
+};
+
 void getNandCtr(void)
 {
     u8 __attribute__((aligned(4))) cid[AES_BLOCK_SIZE];
@@ -357,12 +362,12 @@ void writeFirm(u8 *inbuf, bool isFirm1, u32 size)
     sdmmc_nand_writesectors(offset / 0x200, size / 0x200, inbuf);
 }
 
-void setupKeyslot0x11(const void *otp, bool isA9lh)
+void setupKeyslot0x11(const void *otp)
 {
     u8 __attribute__((aligned(4))) shasum[SHA_256_HASH_SIZE];
 
     //If booting via A9LH, use the leftover contents of the SHA register
-    if(isA9lh) memcpy(shasum, (void *)REG_SHA_HASH, sizeof(shasum));
+    if(ISA9LH) memcpy(shasum, (void *)REG_SHA_HASH, sizeof(shasum));
 
     //Otherwise, calculate the otp.bin hash
     else sha(shasum, otp, 0x90, SHA_256_MODE);
@@ -381,10 +386,10 @@ void generateSector(u8 *keySector, u32 mode)
             memcpy(keySector + AES_BLOCK_SIZE, keySector, AES_BLOCK_SIZE);
             break;
         case 2:
-            memcpy(keySector + AES_BLOCK_SIZE, key2s[0], AES_BLOCK_SIZE);
+            memcpy(keySector + AES_BLOCK_SIZE, !ISDEVUNIT ? key2s[0] : devKey2s[0], AES_BLOCK_SIZE);
             break;
         default:
-            memcpy(keySector + AES_BLOCK_SIZE, key2s[1], AES_BLOCK_SIZE);
+            memcpy(keySector + AES_BLOCK_SIZE, !ISDEVUNIT ? key2s[1] : devKey2s[1], AES_BLOCK_SIZE);
             break;
     }
 
@@ -397,12 +402,12 @@ void generateSector(u8 *keySector, u32 mode)
     }
 }
 
-void getSector(u8 *keySector, bool isA9lh)
+void getSector(u8 *keySector)
 {
     //Read keysector from NAND
     sdmmc_nand_readsectors(0x96, 1, keySector);
 
-    if(isA9lh)
+    if(ISA9LH || ISDEVUNIT)
     {
         //Decrypt key sector
         aes_use_keyslot(0x11);

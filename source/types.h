@@ -18,10 +18,12 @@ typedef volatile u16 vu16;
 typedef volatile u32 vu32;
 typedef volatile u64 vu64;
 
+#define CFG_UNITINFO   (*(vu8  *)0x10010010)
 #define PDN_MPCORE_CFG (*(vu32 *)0x10140FFC)
 #define PDN_SPI_CNT    (*(vu32 *)0x101401C0)
 
-#define ISN3DS (PDN_MPCORE_CFG == 7)
-#define ISA9LH (!PDN_SPI_CNT)
+#define ISN3DS    (PDN_MPCORE_CFG == 7)
+#define ISDEVUNIT (CFG_UNITINFO != 0)
+#define ISA9LH    (!PDN_SPI_CNT)
 
 #include "3dsheaders.h"

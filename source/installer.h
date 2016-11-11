@@ -21,7 +21,8 @@
 #define MAX_STAGE2_SIZE   0x89A00
 
 extern u32 magic;
-extern const u8 key2s[5][AES_BLOCK_SIZE];
+extern const u8 key2s[5][AES_BLOCK_SIZE],
+                devKey2s[2][AES_BLOCK_SIZE];
 
 static inline void installer(bool isOtpless);
 static inline void uninstaller(void);
