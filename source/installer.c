@@ -128,7 +128,7 @@ static inline void installer(bool isOtpless)
     }
 
     //Setup the key sector de/encryption with the SHA register or otp.bin
-    if(ISA9LH || (!ISDEVUNIT && !ISN3DS)) setupKeyslot0x11(otp);
+    if(ISA9LH || !ISN3DS || ISDEVUNIT) setupKeyslot0x11(otp);
 
     //Calculate the CTR for the 3DS partitions
     getNandCtr();
