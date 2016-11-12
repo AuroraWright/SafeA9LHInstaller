@@ -108,7 +108,7 @@ static inline void installer(bool isOtpless)
         shutdown(1, "Error: failed to mount the SD card");
 
     //If making a first install on O3DS, we need the OTP
-    if(!ISA9LH && (ISDEVUNIT || !ISN3DS))
+    if(!ISA9LH && (!ISN3DS || ISDEVUNIT))
     {
         const char otpPath[] = "a9lh/otp.bin";
 
