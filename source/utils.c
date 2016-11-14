@@ -65,8 +65,6 @@ void mcuReboot(void)
     //Ensure that all memory transfers have completed and that the data cache has been flushed
     flushEntireDCache();
 
-    wait(3ULL);
-
     i2cWriteRegister(I2C_DEV_MCU, 0x20, 1 << 2);
     while(true);
 }

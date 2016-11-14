@@ -16,6 +16,7 @@ revision := $(shell git describe --tags --match v[0-9]* --abbrev=8 | sed 's/-[0-
 
 dir_source := source
 dir_loader := loader
+dir_arm11 := arm11
 dir_cakehax := CakeHax
 dir_cakebrah := CakeBrah
 dir_build := build
@@ -30,7 +31,7 @@ objects= $(patsubst $(dir_source)/%.s, $(dir_build)/%.o, \
          $(patsubst $(dir_source)/%.c, $(dir_build)/%.o, \
 	 $(call rwildcard, $(dir_source), *.s *.c)))
 
-bundled = $(dir_build)/loader.bin.o
+bundled = $(dir_build)/loader.bin.o $(dir_build)/arm11.bin.o
 
 define bin2o
 	bin2s $< | $(AS) -o $(@)
@@ -56,6 +57,7 @@ release: $(dir_out)/$(name)$(revision).7z
 .PHONY: clean
 clean:
 	@$(MAKE) -C $(dir_loader) clean
+	@$(MAKE) -C $(dir_arm11) clean
 	@$(MAKE) $(FLAGS) -C $(dir_cakehax) clean
 	@$(MAKE) $(FLAGS) -C $(dir_cakebrah) clean
 	@rm -rf $(dir_out) $(dir_build)
@@ -88,6 +90,9 @@ $(dir_build)/%.bin.o: $(dir_build)/%.bin
 	@$(bin2o)
 
 $(dir_build)/loader.bin: $(dir_loader) $(dir_build)
+	@$(MAKE) -C $<
+
+$(dir_build)/arm11.bin: $(dir_arm11) $(dir_build)
 	@$(MAKE) -C $<
 
 $(dir_build)/memory.o $(dir_build)/strings.o: CFLAGS += -O3

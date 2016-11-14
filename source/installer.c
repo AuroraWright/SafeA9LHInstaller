@@ -64,9 +64,9 @@ static const u8 sectorHashRetail[SHA_256_HASH_SIZE] = {
 
 u32 posY;
 
-static void drawTitle(void)
+static void drawTitle(bool isOtpless)
 {
-    initScreens();
+    initScreens(isOtpless);
 
     posY = drawString(TITLE, 10, 10, COLOR_TITLE);
     posY = drawString("Thanks to delebile, #cakey and StandardBus", 10, posY + SPACING_Y, COLOR_WHITE);
@@ -76,7 +76,7 @@ void main(void)
 {
     bool isOtpless = ISA9LH && magic == 0xDEADCAFE;
 
-    if(!isOtpless) drawTitle();
+    if(!isOtpless) drawTitle(false);
 
     if(!sdmmc_sdcard_init(isOtpless))
         shutdown(1, "Error: failed to initialize SD and NAND");
@@ -289,7 +289,7 @@ static inline void installer(bool isOtpless)
 
     writeFirm((u8 *)FIRM0_OFFSET, false, FIRM0_SIZE);
 
-    if(isOtpless) drawTitle();
+    if(isOtpless) drawTitle(true);
 
     shutdown(2, ISA9LH && !isOtpless ? "Update: success!" : "Full install: success!");
 }
