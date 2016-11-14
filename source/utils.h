@@ -21,9 +21,14 @@
 #define COLOR_RED   0x0000FF
 #define COLOR_GREEN 0x00FF00
 
+#define TICKS_PER_SEC       67027964ULL
+#define REG_TIMER_CNT(i)    *(vu16 *)(0x10003002 + 4 * i)
+#define REG_TIMER_VAL(i)    *(vu16 *)(0x10003000 + 4 * i)
+
 extern u32 posY;
 
 u32 waitInput(void);
+void wait(u64 amount);
 void mcuReboot(void);
 void inputSequence(void);
 void shutdown(u32 mode, const char *message);

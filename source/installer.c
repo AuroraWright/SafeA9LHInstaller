@@ -64,14 +64,19 @@ static const u8 sectorHashRetail[SHA_256_HASH_SIZE] = {
 
 u32 posY;
 
-void main(void)
+static void drawTitle(void)
 {
-    bool isOtpless = ISA9LH && magic == 0xDEADCAFE;
-
     initScreens();
 
     posY = drawString(TITLE, 10, 10, COLOR_TITLE);
     posY = drawString("Thanks to delebile, #cakey and StandardBus", 10, posY + SPACING_Y, COLOR_WHITE);
+}
+
+void main(void)
+{
+    bool isOtpless = ISA9LH && magic == 0xDEADCAFE;
+
+    if(!isOtpless) drawTitle();
 
     if(!sdmmc_sdcard_init(isOtpless))
         shutdown(1, "Error: failed to initialize SD and NAND");
@@ -83,11 +88,6 @@ void main(void)
         posY = drawString(ISA9LH ? "Press SELECT to update A9LH, START to uninstall" : "Press SELECT for a full install", 10, posY + SPACING_Y, COLOR_WHITE);
         posY = drawString("Press any other button to shutdown", 10, posY, COLOR_WHITE);
         pressed = waitInput();
-    }
-    else
-    {
-        posY = drawString("Finalizing install...", 10, posY + SPACING_Y, COLOR_WHITE);
-        pressed = 0;
     }
 
     if(isOtpless || pressed == BUTTON_SELECT) installer(isOtpless);
@@ -288,6 +288,8 @@ static inline void installer(bool isOtpless)
     }
 
     writeFirm((u8 *)FIRM0_OFFSET, false, FIRM0_SIZE);
+
+    if(isOtpless) drawTitle();
 
     shutdown(2, ISA9LH && !isOtpless ? "Update: success!" : "Full install: success!");
 }

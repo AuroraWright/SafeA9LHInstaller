@@ -36,6 +36,7 @@
 
 #include "screen.h"
 #include "cache.h"
+#include "utils.h"
 #include "i2c.h"
 
 vu32 *arm11Entry = (vu32 *)BRAHMA_ARM11_ENTRY;
@@ -182,6 +183,8 @@ void initScreens(void)
     if(!ARESCREENSINITED)
     {
         invokeArm11Function(initSequence);
+
+        wait(3ULL);
 
         //Turn on backlight
         i2cWriteRegister(I2C_DEV_MCU, 0x22, 0x2A);
