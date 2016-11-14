@@ -119,7 +119,7 @@ u32 firmRead(void *dest)
             u32 tempVersion = hexAtoi(info.altname, 8);
 
             //FIRM is equal or newer than 11.0
-            if(!ISDEVUNIT && tempVersion >= (ISN3DS ? 0x21 : 0x52)) ret = tempVersion <= (ISN3DS ? 0x26 : 0x56) ? 5 : 2;
+            if(!ISDEVUNIT && tempVersion >= (ISN3DS ? 0x21 : 0x52)) ret = tempVersion <= (ISN3DS ? 0x28 : 0x58) ? 5 : 2;
 
             //Found an older cxi
             if(tempVersion < firmVersion) firmVersion = tempVersion;

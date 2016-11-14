@@ -332,7 +332,7 @@ static inline void uninstaller(void)
             shutdown(1, "Error: more than one FIRM has been detected");
             break;
         case 5:
-            posY = drawString("FIRM 11.0 or 11.1 has been detected!", 10, posY + SPACING_Y, COLOR_RED);
+            posY = drawString("FIRM 11.0/11.1/11.2 has been detected!", 10, posY + SPACING_Y, COLOR_RED);
             posY = drawString("Press SELECT to load 10.4 FIRM from SD", 10, posY + SPACING_Y, COLOR_WHITE);
             posY = drawString("Press any other button to load FIRM from CTRNAND", 10, posY, COLOR_RED);
 
@@ -354,7 +354,7 @@ static inline void uninstaller(void)
                 break;
             }
         case 2:
-            if(result == 2) posY = drawString("A FIRM newer than 11.1 has been detected!", 10, posY + SPACING_Y, COLOR_RED);
+            if(result == 2) posY = drawString("A FIRM newer than 11.2 has been detected!", 10, posY + SPACING_Y, COLOR_RED);
             posY = drawString("You are about to uninstall A9LH!", 10, posY + SPACING_Y, COLOR_RED);
             posY = drawString("To reinstall you'll need an hardmod or a DSi dg!", 10, posY, COLOR_RED);
             break;
