@@ -165,13 +165,11 @@ static inline void installer(bool isOtpless)
                 break;
             case 2:
             case 3:
-                updateKey2 = true;
-                break;
             case 4:
                 updateFirm1 = true;
                 updateKey2 = true;
                 break;
-            default:
+            case 1:
                 break;
         }
 
