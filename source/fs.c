@@ -88,6 +88,11 @@ void fileDelete(const char *path)
     f_unlink(path);
 }
 
+void fileRename(const char *oldPath, const char *newPath)
+{
+    f_rename(oldPath, newPath);
+}
+
 u32 firmRead(void *dest)
 {
     const char *firmFolders[] = {"00000002", "20000002"};

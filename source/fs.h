@@ -29,4 +29,5 @@ void unmountCtrNand(void);
 u32 fileRead(void *dest, const char *path, u32 maxSize);
 bool fileWrite(const void *buffer, const char *path, u32 size);
 void fileDelete(const char *path);
+void fileRename(const char *oldPath, const char *newPath);
 u32 firmRead(void *dest);

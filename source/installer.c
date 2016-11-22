@@ -206,6 +206,8 @@ static inline void installer(bool isOtpless)
     {
         magic = 0xDEADCAFE;
 
+        fileRename("arm9loaderhax.bin", "arm9loaderhax.bak");
+
         if(!fileWrite((void *)0x23F00000, "arm9loaderhax.bin", 0x10000))
             shutdown(1, "Error: couldn't write arm9loaderhax.bin");
     }
@@ -273,7 +275,11 @@ static inline void installer(bool isOtpless)
 
         drawTitle();
 
-        if(sdmmc_sdcard_init(true, false) && mountFs(true)) fileDelete("arm9loaderhax.bin");
+        if(sdmmc_sdcard_init(true, false) && mountFs(true))
+        {
+            fileDelete("arm9loaderhax.bin");
+            fileRename("arm9loaderhax.bak", "arm9loaderhax.bin");
+        }
         else
         {
             posY = drawString("Couldn't remove arm9loaderhax.bin!", 10, posY + SPACING_Y, COLOR_RED);
