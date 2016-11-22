@@ -381,14 +381,14 @@ void generateSector(u8 *keySector, u32 mode)
     //Inject key2
     switch(mode)
     {
+        case 0:
+            memcpy(keySector + AES_BLOCK_SIZE, !ISDEVUNIT ? key2s[1] : devKey2s[1], AES_BLOCK_SIZE);
+            break;
         case 1:
             memcpy(keySector + AES_BLOCK_SIZE, keySector, AES_BLOCK_SIZE);
             return;
         case 2:
             memcpy(keySector + AES_BLOCK_SIZE, !ISDEVUNIT ? key2s[0] : devKey2s[0], AES_BLOCK_SIZE);
-            break;
-        default:
-            memcpy(keySector + AES_BLOCK_SIZE, !ISDEVUNIT ? key2s[1] : devKey2s[1], AES_BLOCK_SIZE);
             break;
     }
 
