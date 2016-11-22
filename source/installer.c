@@ -272,10 +272,15 @@ static inline void installer(bool isOtpless)
     else
     {
         *(vu32 *)0x80FD0FC = 0;
-        sdmmc_sdcard_init(true, false);
-        mountFs(true);
-        fileDelete("arm9loaderhax.bin");
+
         drawTitle();
+
+        if(sdmmc_sdcard_init(true, false) && mountFs(true)) fileDelete("arm9loaderhax.bin");
+        else
+        {
+            posY = drawString("Couldn't remove arm9loaderhax.bin!", 10, posY + SPACING_Y, COLOR_RED);
+            posY = drawString("Do it yourself after the install ends", 10, posY, COLOR_RED);
+        }
     }
 
     if(!ISA9LH && ISN3DS && !ISDEVUNIT)
