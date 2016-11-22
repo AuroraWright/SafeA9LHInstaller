@@ -18,6 +18,8 @@
 #define MAX_STAGE1_SIZE   0x1E70
 #define MAX_STAGE2_SIZE   0x89A00
 
+extern u32 magic;
+
 extern const u8 key2s[5][AES_BLOCK_SIZE],
                 devKey2s[2][AES_BLOCK_SIZE];
 

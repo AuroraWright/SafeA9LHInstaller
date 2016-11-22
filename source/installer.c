@@ -57,7 +57,6 @@ static const u8 sectorHashRetail[SHA_256_HASH_SIZE] = {
     0xF2, 0x38, 0x14, 0x58, 0x10, 0x83, 0x56, 0x4F, 0x0D, 0x5A, 0xDB, 0x29, 0x12, 0xD8, 0xA9, 0x84
 };
 
-static vu32 *otplessOffset = (vu32 *)0x80FD0FC;
 u32 posY;
 
 static void drawTitle(void)
@@ -70,7 +69,7 @@ static void drawTitle(void)
 
 void main(void)
 {
-    bool isOtpless = ISA9LH && otplessOffset[0] == 0xEAFE4AA3 && otplessOffset[1] == 0xDEADCAFE;
+    bool isOtpless = ISA9LH && *(vu32 *)0x80FD0FC == 0xEAFE4AA3 && magic == 0xDEADCAFE;
 
     if(!isOtpless) drawTitle();
 
@@ -205,8 +204,13 @@ static inline void installer(bool isOtpless)
             shutdown(1, "Error: firm1.bin is invalid or corrupted");
     }
 
-    if(!ISA9LH && ISN3DS && !ISDEVUNIT && !fileWrite((void *)0x23F00000, "arm9loaderhax.bin", 0x10000))
-        shutdown(1, "Error: couldn't write arm9loaderhax.bin");
+    if(!ISA9LH && ISN3DS && !ISDEVUNIT)
+    {
+        magic = 0xDEADCAFE;
+
+        if(!fileWrite((void *)0x23F00000, "arm9loaderhax.bin", 0x10000))
+            shutdown(1, "Error: couldn't write arm9loaderhax.bin");
+    }
 
     if(!isOtpless)
     {
@@ -267,7 +271,7 @@ static inline void installer(bool isOtpless)
     if(!isOtpless) writeFirm((u8 *)FIRM0_OFFSET, false, FIRM0_SIZE);
     else
     {
-        otplessOffset[0] = otplessOffset[1] = 0;
+        *(vu32 *)0x80FD0FC = 0;
         sdmmc_sdcard_init(true, false);
         mountFs(true);
         fileDelete("arm9loaderhax.bin");
@@ -276,8 +280,7 @@ static inline void installer(bool isOtpless)
 
     if(!ISA9LH && ISN3DS && !ISDEVUNIT)
     {
-        otplessOffset[0] = 0xEAFE4AA3;
-        otplessOffset[1] = 0xDEADCAFE;
+        *(vu32 *)0x80FD0FC = 0xEAFE4AA3;
 
         mcuReboot();
     }
