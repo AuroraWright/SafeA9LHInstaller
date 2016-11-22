@@ -11,7 +11,6 @@
 #include "types.h"
 #include "installer.h"
 #include "fatfs/sdmmc/sdmmc.h"
-#include "../build/bundled.h"
 
 static const u8 sectorHashRetail[SHA_256_HASH_SIZE] = {
     0x82, 0xF2, 0x73, 0x0D, 0x2C, 0x2D, 0xA3, 0xF3, 0x01, 0x65, 0xF9, 0x87, 0xFD, 0xCC, 0xAC, 0x5C,
@@ -29,13 +28,9 @@ static const u8 sectorHashRetail[SHA_256_HASH_SIZE] = {
     0x68, 0x52, 0xCC, 0x21, 0x89, 0xAE, 0x28, 0x38, 0x1A, 0x75, 0x90, 0xE7, 0x38, 0x23, 0x48, 0x41,
     0x8E, 0x80, 0x78, 0x75, 0x27, 0x64, 0x04, 0xD6, 0x28, 0xD6, 0xFA, 0x39, 0xA8, 0x6F, 0xB0, 0x3F
 },
-                firm0100Hash[SHA_256_HASH_SIZE] = {
+                firm1HashRetail[SHA_256_HASH_SIZE] = {
     0xD8, 0x2D, 0xB7, 0xB4, 0x38, 0x2B, 0x07, 0x88, 0x99, 0x77, 0x91, 0x0C, 0xC6, 0xEC, 0x6D, 0x87,
     0x7D, 0x21, 0x79, 0x23, 0xD7, 0x60, 0xAF, 0x4E, 0x8B, 0x3A, 0xAB, 0xB2, 0x63, 0xE4, 0x21, 0xC6
-},
-                firm1HashRetail[SHA_256_HASH_SIZE] = {
-    0xD2, 0x53, 0xC1, 0xCC, 0x0A, 0x5F, 0xFA, 0xC6, 0xB3, 0x83, 0xDA, 0xC1, 0x82, 0x7C, 0xFB, 0x3B,
-    0x2D, 0x3D, 0x56, 0x6C, 0x6A, 0x1A, 0x8E, 0x52, 0x54, 0xE3, 0x89, 0xC2, 0x95, 0x06, 0x23, 0xE5
 },
                 firm104O3DSHash[SHA_256_HASH_SIZE] = {
     0x5D, 0x33, 0xD9, 0xCE, 0xE3, 0x39, 0x05, 0xD5, 0xCE, 0x37, 0xFE, 0xFB, 0xB5, 0xEC, 0x73, 0x6A,
@@ -62,11 +57,12 @@ static const u8 sectorHashRetail[SHA_256_HASH_SIZE] = {
     0xF2, 0x38, 0x14, 0x58, 0x10, 0x83, 0x56, 0x4F, 0x0D, 0x5A, 0xDB, 0x29, 0x12, 0xD8, 0xA9, 0x84
 };
 
+static vu32 *otplessOffset = (vu32 *)0x80FD0FC;
 u32 posY;
 
-static void drawTitle(bool isOtpless)
+static void drawTitle(void)
 {
-    initScreens(isOtpless);
+    initScreens();
 
     posY = drawString(TITLE, 10, 10, COLOR_TITLE);
     posY = drawString("Thanks to delebile, #cakey and StandardBus", 10, posY + SPACING_Y, COLOR_WHITE);
@@ -74,11 +70,11 @@ static void drawTitle(bool isOtpless)
 
 void main(void)
 {
-    bool isOtpless = ISA9LH && magic == 0xDEADCAFE;
+    bool isOtpless = ISA9LH && otplessOffset[0] == 0xEAFE4AA3 && otplessOffset[1] == 0xDEADCAFE;
 
-    if(!isOtpless) drawTitle(false);
+    if(!isOtpless) drawTitle();
 
-    if(!sdmmc_sdcard_init(isOtpless))
+    if(!sdmmc_sdcard_init(!isOtpless, true) && !isOtpless)
         shutdown(1, "Error: failed to initialize SD and NAND");
 
     u32 pressed;
@@ -191,15 +187,6 @@ static inline void installer(bool isOtpless)
 
     if(!ISA9LH || updateKey2 || isOtpless) generateSector(keySector, (!ISA9LH && ISN3DS && !ISDEVUNIT) ? 1 : 0);
 
-    if(!ISA9LH && ISN3DS && !ISDEVUNIT)
-    {
-        //Read 10.0 FIRM0
-        if(fileRead((void *)FIRM0_100_OFFSET, "a9lh/firm0_100.bin", FIRM0100_SIZE) != FIRM0100_SIZE)
-            shutdown(1, "Error: firm0_100.bin doesn't exist or has a wrong size");
-        if(!verifyHash((void *)FIRM0_100_OFFSET, FIRM0100_SIZE, firm0100Hash))
-            shutdown(1, "Error: firm0_100.bin is invalid or corrupted");
-    }
-
     if(!ISA9LH || updateFirm0)
     {
         //Read FIRM0
@@ -217,6 +204,9 @@ static inline void installer(bool isOtpless)
         if(!verifyHash((void *)FIRM1_OFFSET, FIRM1_SIZE, !ISDEVUNIT ? firm1HashRetail : firm1HashDev))
             shutdown(1, "Error: firm1.bin is invalid or corrupted");
     }
+
+    if(!ISA9LH && ISN3DS && !ISDEVUNIT && !fileWrite((void *)0x23F00000, "arm9loaderhax.bin", 0x10000))
+        shutdown(1, "Error: couldn't write arm9loaderhax.bin");
 
     if(!isOtpless)
     {
@@ -274,22 +264,23 @@ static inline void installer(bool isOtpless)
 
     if(!ISA9LH || updateFirm1) writeFirm((u8 *)FIRM1_OFFSET, true, FIRM1_SIZE);
     if(!ISA9LH || updateKey2 || isOtpless) sdmmc_nand_writesectors(0x96, 1, keySector);
+    if(!isOtpless) writeFirm((u8 *)FIRM0_OFFSET, false, FIRM0_SIZE);
+    else
+    {
+        otplessOffset[0] = otplessOffset[1] = 0;
+        sdmmc_sdcard_init(true, false);
+        mountFs(true);
+        fileDelete("arm9loaderhax.bin");
+        drawTitle();
+    }
 
     if(!ISA9LH && ISN3DS && !ISDEVUNIT)
     {
-        const u8 ldrAndBranch[] = {0x00, 0x00, 0x9F, 0xE5, 0x10, 0xFF, 0x2F, 0xE1, 0x00, 0x80, 0xFF, 0x01};
-
-        memcpy((void *)0x80FD0FC, ldrAndBranch, sizeof(ldrAndBranch));
-        memcpy((void *)0x1FF8000, loader_bin, loader_bin_size);
-
-        writeFirm((u8 *)FIRM0_100_OFFSET, false, FIRM0100_SIZE);
+        otplessOffset[0] = 0xEAFE4AA3;
+        otplessOffset[1] = 0xDEADCAFE;
 
         mcuReboot();
     }
-
-    writeFirm((u8 *)FIRM0_OFFSET, false, FIRM0_SIZE);
-
-    if(isOtpless) drawTitle(true);
 
     shutdown(2, ISA9LH && !isOtpless ? "Update: success!" : "Full install: success!");
 }

@@ -8,54 +8,30 @@
 #include "cache.h"
 #include "i2c.h"
 
-static void startChrono(void)
-{
-    REG_TIMER_CNT(0) = 0; //67MHz
-    for(u32 i = 1; i < 4; i++) REG_TIMER_CNT(i) = 4; //Count-up
-
-    for(u32 i = 0; i < 4; i++) REG_TIMER_VAL(i) = 0;
-
-    REG_TIMER_CNT(0) = 0x80; //67MHz; enabled
-    for(u32 i = 1; i < 4; i++) REG_TIMER_CNT(i) = 0x84; //Count-up; enabled
-}
-
-static u64 chrono(void)
-{
-    u64 res;
-    for(u32 i = 0; i < 4; i++) res |= REG_TIMER_VAL(i) << (16 * i);
-
-    res /= (TICKS_PER_SEC / 1000);
-
-    return res;
-}
-
 u32 waitInput(void)
 {
-    bool pressedKey = false;
     u32 key,
         oldKey = HID_PAD;
 
-    while(!pressedKey)
+    while(true)
     {
         key = HID_PAD;
 
-        if(!key) oldKey = key;
-        else if(key != oldKey)
+        if(!key)
         {
-            //Make sure the key is pressed
-            u32 i;
-            for(i = 0; i < 0x13000 && key == HID_PAD; i++);
-            if(i == 0x13000) pressedKey = true;
+            oldKey = 0;
+            continue;
         }
+
+        if(key == oldKey) continue;
+
+        //Make sure the key is pressed
+        u32 i;
+        for(i = 0; i < 0x13000 && key == HID_PAD; i++);
+        if(i == 0x13000) break;
     }
 
     return key;
-}
-
-void wait(u64 amount)
-{
-    startChrono();
-    while(chrono() < amount);
 }
 
 void mcuReboot(void)

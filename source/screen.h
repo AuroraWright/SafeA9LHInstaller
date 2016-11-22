@@ -33,7 +33,6 @@
 #define ARESCREENSINITED (PDN_GPU_CNT != 1)
 
 #define BRAHMA_ARM11_ENTRY 0x1FFFFFF8
-#define A11_PAYLOAD_LOC    0x1FFF4C80
 #define WAIT_FOR_ARM9()    *arm11Entry = 0; while(!*arm11Entry); ((void (*)())*arm11Entry)();
 
 #define SCREEN_TOP_WIDTH     400
@@ -49,4 +48,4 @@ static struct fb {
 } *const fb = (struct fb *)0x23FFFE00;
 
 void clearScreens(void);
-void initScreens(bool isOtpless);
+void initScreens(void);

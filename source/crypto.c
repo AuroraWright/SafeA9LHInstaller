@@ -277,10 +277,10 @@ static u8 nandSlot;
 static u32 fatStart;
 __attribute__((aligned(4))) const u8 key2s[5][AES_BLOCK_SIZE] = {
     {0x42, 0x3F, 0x81, 0x7A, 0x23, 0x52, 0x58, 0x31, 0x6E, 0x75, 0x8E, 0x3A, 0x39, 0x43, 0x2E, 0xD0},
-    {0x08, 0x24, 0xD3, 0xCB, 0x4A, 0xE9, 0x4D, 0x62, 0x4D, 0xAA, 0x52, 0x60, 0x47, 0xC5, 0x93, 0x94},
+    {0xA5, 0x25, 0x87, 0x11, 0x8F, 0x42, 0x9F, 0x3D, 0x65, 0x1D, 0xDD, 0x58, 0x0B, 0x6D, 0xF2, 0x17},
     {0x65, 0x29, 0x3E, 0x12, 0x56, 0x0C, 0x0B, 0xD1, 0xDD, 0xB5, 0x63, 0x1C, 0xB6, 0xD9, 0x52, 0x75},
     {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x3B, 0xF5, 0xF6},
-    {0xA5, 0x25, 0x87, 0x11, 0x8F, 0x42, 0x9F, 0x3D, 0x65, 0x1D, 0xDD, 0x58, 0x0B, 0x6D, 0xF2, 0x17}
+    {0x08, 0x24, 0xD3, 0xCB, 0x4A, 0xE9, 0x4D, 0x62, 0x4D, 0xAA, 0x52, 0x60, 0x47, 0xC5, 0x93, 0x94}
 },
                                      devKey2s[2][AES_BLOCK_SIZE] = {
     {0xFF, 0x77, 0xA0, 0x9A, 0x99, 0x81, 0xE9, 0x48, 0xEC, 0x51, 0xC9, 0x32, 0x5D, 0x14, 0xEC, 0x25},
@@ -383,7 +383,7 @@ void generateSector(u8 *keySector, u32 mode)
     {
         case 1:
             memcpy(keySector + AES_BLOCK_SIZE, keySector, AES_BLOCK_SIZE);
-            break;
+            return;
         case 2:
             memcpy(keySector + AES_BLOCK_SIZE, !ISDEVUNIT ? key2s[0] : devKey2s[0], AES_BLOCK_SIZE);
             break;
@@ -392,13 +392,10 @@ void generateSector(u8 *keySector, u32 mode)
             break;
     }
 
-    if(mode != 1)
-    {
-        //Encrypt key sector
-        aes_use_keyslot(0x11);
-        for(u32 i = 0; i < 32; i++)
-            aes(keySector + (AES_BLOCK_SIZE * i), keySector + (AES_BLOCK_SIZE * i), 1, NULL, AES_ECB_ENCRYPT_MODE, 0);
-    }
+    //Encrypt key sector
+    aes_use_keyslot(0x11);
+    for(u32 i = 0; i < 32; i++)
+        aes(keySector + (AES_BLOCK_SIZE * i), keySector + (AES_BLOCK_SIZE * i), 1, NULL, AES_ECB_ENCRYPT_MODE, 0);
 }
 
 void getSector(u8 *keySector)
@@ -406,13 +403,12 @@ void getSector(u8 *keySector)
     //Read keysector from NAND
     sdmmc_nand_readsectors(0x96, 1, keySector);
 
-    if(ISA9LH || ISDEVUNIT)
-    {
-        //Decrypt key sector
-        aes_use_keyslot(0x11);
-        for(u32 i = 0; i < 32; i++)
-            aes(keySector + (AES_BLOCK_SIZE * i), keySector + (AES_BLOCK_SIZE * i), 1, NULL, AES_ECB_DECRYPT_MODE, 0);
-    }
+    if(!ISA9LH && !ISDEVUNIT) return;
+
+    //Decrypt key sector
+    aes_use_keyslot(0x11);
+    for(u32 i = 0; i < 32; i++)
+        aes(keySector + (AES_BLOCK_SIZE * i), keySector + (AES_BLOCK_SIZE * i), 1, NULL, AES_ECB_DECRYPT_MODE, 0);
 }
 
 bool verifyHash(const void *data, u32 size, const u8 *hash)
@@ -427,23 +423,22 @@ u32 decryptExeFs(Cxi *cxi)
 {
     u32 exeFsSize = 0;
 
-    if(memcmp(cxi->ncch.magic, "NCCH", 4) == 0)
-    {
-        u8 *exeFsOffset = (u8 *)cxi + (cxi->ncch.exeFsOffset + 1) * 0x200;
-        exeFsSize = (cxi->ncch.exeFsSize - 1) * 0x200;
-        __attribute__((aligned(4))) u8 ncchCtr[AES_BLOCK_SIZE] = {0};
+    if(memcmp(cxi->ncch.magic, "NCCH", 4) != 0) return exeFsSize;
 
-        for(u32 i = 0; i < 8; i++)
-            ncchCtr[7 - i] = cxi->ncch.partitionId[i];
-        ncchCtr[8] = 2;
+    u8 *exeFsOffset = (u8 *)cxi + (cxi->ncch.exeFsOffset + 1) * 0x200;
+    exeFsSize = (cxi->ncch.exeFsSize - 1) * 0x200;
+    __attribute__((aligned(4))) u8 ncchCtr[AES_BLOCK_SIZE] = {0};
 
-        aes_setkey(0x2C, cxi, AES_KEYY, AES_INPUT_BE | AES_INPUT_NORMAL);
-        aes_advctr(ncchCtr, 0x200 / AES_BLOCK_SIZE, AES_INPUT_BE | AES_INPUT_NORMAL);
-        aes_use_keyslot(0x2C);
-        aes(cxi, exeFsOffset, exeFsSize / AES_BLOCK_SIZE, ncchCtr, AES_CTR_MODE, AES_INPUT_BE | AES_INPUT_NORMAL);
+    for(u32 i = 0; i < 8; i++)
+        ncchCtr[7 - i] = cxi->ncch.partitionId[i];
+    ncchCtr[8] = 2;
 
-        if(memcmp(cxi, "FIRM", 4) != 0) exeFsSize = 0;
-    }
+    aes_setkey(0x2C, cxi, AES_KEYY, AES_INPUT_BE | AES_INPUT_NORMAL);
+    aes_advctr(ncchCtr, 0x200 / AES_BLOCK_SIZE, AES_INPUT_BE | AES_INPUT_NORMAL);
+    aes_use_keyslot(0x2C);
+    aes(cxi, exeFsOffset, exeFsSize / AES_BLOCK_SIZE, ncchCtr, AES_CTR_MODE, AES_INPUT_BE | AES_INPUT_NORMAL);
+
+    if(memcmp(cxi, "FIRM", 4) != 0) exeFsSize = 0;
 
     return exeFsSize;
 }

@@ -40,16 +40,14 @@ void unmountCtrNand(void)
 u32 fileRead(void *dest, const char *path, u32 maxSize)
 {
     FIL file;
-    u32 ret;
+    u32 ret = 0;
 
-    if(f_open(&file, path, FA_READ) != FR_OK) ret = 0;
-    else
-    {
-        u32 size = f_size(&file);
-        if(size <= maxSize)
-            f_read(&file, dest, size, (unsigned int *)&ret);
-        f_close(&file);
-    }
+    if(f_open(&file, path, FA_READ) != FR_OK) return ret;
+
+    u32 size = f_size(&file);
+    if(size <= maxSize)
+        f_read(&file, dest, size, (unsigned int *)&ret);
+    f_close(&file);
 
     return ret;
 }
@@ -57,7 +55,6 @@ u32 fileRead(void *dest, const char *path, u32 maxSize)
 bool fileWrite(const void *buffer, const char *path, u32 size)
 {
     FIL file;
-    bool ret;
 
     switch(f_open(&file, path, FA_WRITE | FA_OPEN_ALWAYS))
     {
@@ -68,8 +65,7 @@ bool fileWrite(const void *buffer, const char *path, u32 size)
             f_truncate(&file);
             f_close(&file);
 
-            ret = (u32)written == size;
-            break;
+            return (u32)written == size;
         }
         case FR_NO_PATH:
             for(u32 i = 1; path[i] != 0; i++)
@@ -81,19 +77,20 @@ bool fileWrite(const void *buffer, const char *path, u32 size)
                     f_mkdir(folder);
                 }
 
-            ret = fileWrite(buffer, path, size);
-            break;
+            return fileWrite(buffer, path, size);
         default:
-            ret = false;
-            break;
+            return false;
     }
+}
 
-    return ret;
+void fileDelete(const char *path)
+{
+    f_unlink(path);
 }
 
 u32 firmRead(void *dest)
 {
-    const char *firmFolders[] = { "00000002", "20000002" };
+    const char *firmFolders[] = {"00000002", "20000002"};
     char path[48] = "1:/title/00040138/";
     concatenateStrings(path, firmFolders[ISN3DS ? 1 : 0]);
     concatenateStrings(path, "/content");
@@ -103,42 +100,41 @@ u32 firmRead(void *dest)
     u32 firmVersion = 0xFFFFFFFF,
         ret = 0;
 
-    if(f_opendir(&dir, path) == FR_OK)
+    if(f_opendir(&dir, path) != FR_OK) goto exit;
+
+    FILINFO info;
+
+    //Parse the target directory
+    while(f_readdir(&dir, &info) == FR_OK && info.fname[0] != 0)
     {
-        FILINFO info;
+        //Not a cxi
+        if(info.fname[9] != 'a' || strlen(info.fname) != 12) continue;
 
-        //Parse the target directory
-        while(f_readdir(&dir, &info) == FR_OK && info.fname[0] != 0)
-        {
-            //Not a cxi
-            if(info.fname[9] != 'a' || strlen(info.fname) != 12) continue;
+        //Multiple cxis were found
+        if(firmVersion != 0xFFFFFFFF) ret = 1;
 
-            //Multiple cxis were found
-            if(firmVersion != 0xFFFFFFFF) ret = 1;
+        u32 tempVersion = hexAtoi(info.altname, 8);
 
-            u32 tempVersion = hexAtoi(info.altname, 8);
+        //FIRM is equal or newer than 11.0
+        if(!ISDEVUNIT && tempVersion >= (ISN3DS ? 0x21 : 0x52)) ret = tempVersion <= (ISN3DS ? 0x28 : 0x58) ? 5 : 2;
 
-            //FIRM is equal or newer than 11.0
-            if(!ISDEVUNIT && tempVersion >= (ISN3DS ? 0x21 : 0x52)) ret = tempVersion <= (ISN3DS ? 0x28 : 0x58) ? 5 : 2;
-
-            //Found an older cxi
-            if(tempVersion < firmVersion) firmVersion = tempVersion;
-        }
-
-        f_closedir(&dir);
-
-        if(ret != 1 && firmVersion != 0xFFFFFFFF)
-        {
-            //Complete the string with the .app name
-            concatenateStrings(path, "/00000000.app");
-
-            //Convert back the .app name from integer to array
-            hexItoa(firmVersion, path + 35, 8);
-
-            if(!fileRead(dest, path, 0x100000)) ret = 3;
-        }
+        //Found an older cxi
+        if(tempVersion < firmVersion) firmVersion = tempVersion;
     }
 
+    f_closedir(&dir);
+
+    if(ret == 1 || firmVersion == 0xFFFFFFFF) goto exit;
+
+    //Complete the string with the .app name
+    concatenateStrings(path, "/00000000.app");
+
+    //Convert back the .app name from integer to array
+    hexItoa(firmVersion, path + 35, 8);
+
+    if(!fileRead(dest, path, 0x100000)) ret = 3;
+
+exit:
     if(firmVersion == 0xFFFFFFFF) ret = 4;
 
     return ret;

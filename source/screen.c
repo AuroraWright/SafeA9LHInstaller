@@ -39,20 +39,8 @@
 #include "utils.h"
 #include "memory.h"
 #include "i2c.h"
-#include "../build/bundled.h"
 
 vu32 *arm11Entry = (vu32 *)BRAHMA_ARM11_ENTRY;
-
-static inline void ownArm11(void)
-{
-    memcpy((void *)A11_PAYLOAD_LOC, arm11_bin, arm11_bin_size);
-
-    *arm11Entry = 1;
-    *(vu32 *)0x1FFAED80 = 0xE51FF004;
-    *(vu32 *)0x1FFAED84 = A11_PAYLOAD_LOC;
-    *(vu8 *)0x1FFFFFF0 = 2;
-    while(*arm11Entry != 0);
-}
 
 static void invokeArm11Function(void (*func)())
 {
@@ -87,7 +75,7 @@ void clearScreens(void)
     invokeArm11Function(ARM11);
 }
 
-void initScreens(bool isOtpless)
+void initScreens(void)
 {
     void __attribute__((naked)) initSequence(void)
     {
@@ -195,10 +183,6 @@ void initScreens(bool isOtpless)
 
     if(!ARESCREENSINITED)
     {
-        wait(3ULL);
-
-        if(isOtpless) ownArm11();
-
         invokeArm11Function(initSequence);
 
         //Turn on backlight

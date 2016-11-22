@@ -28,7 +28,6 @@
 extern u32 posY;
 
 u32 waitInput(void);
-void wait(u64 amount);
 void mcuReboot(void);
 void inputSequence(void);
 void shutdown(u32 mode, const char *message);

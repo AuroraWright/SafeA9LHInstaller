@@ -15,8 +15,6 @@ name := SafeA9LHInstaller
 revision := $(shell git describe --tags --match v[0-9]* --abbrev=8 | sed 's/-[0-9]*-g/-/i')
 
 dir_source := source
-dir_loader := loader
-dir_arm11 := arm11
 dir_cakehax := CakeHax
 dir_cakebrah := CakeBrah
 dir_build := build
@@ -30,14 +28,6 @@ FLAGS := name=$(name).dat dir_out=$(abspath $(dir_out)) ICON=$(abspath icon.png)
 objects= $(patsubst $(dir_source)/%.s, $(dir_build)/%.o, \
          $(patsubst $(dir_source)/%.c, $(dir_build)/%.o, \
 	 $(call rwildcard, $(dir_source), *.s *.c)))
-
-bundled = $(dir_build)/loader.bin.o $(dir_build)/arm11.bin.o
-
-define bin2o
-	bin2s $< | $(AS) -o $(@)
-	echo "extern const u8" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"[];" >> $(dir_build)/bundled.h
-	echo "extern const u32" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`_size";" >> $(dir_build)/bundled.h
-endef
 
 .PHONY: all
 all: launcher a9lh cakebrah
@@ -56,8 +46,6 @@ release: $(dir_out)/$(name)$(revision).7z
 
 .PHONY: clean
 clean:
-	@$(MAKE) -C $(dir_loader) clean
-	@$(MAKE) -C $(dir_arm11) clean
 	@$(MAKE) $(FLAGS) -C $(dir_cakehax) clean
 	@$(MAKE) $(FLAGS) -C $(dir_cakebrah) clean
 	@rm -rf $(dir_out) $(dir_build)
@@ -83,17 +71,8 @@ $(dir_out)/$(name)$(revision).7z: all
 $(dir_build)/main.bin: $(dir_build)/main.elf
 	$(OC) -S -O binary $< $@
 
-$(dir_build)/main.elf: $(bundled) $(objects)
+$(dir_build)/main.elf: $(objects)
 	$(LINK.o) -T linker.ld $(OUTPUT_OPTION) $^
-
-$(dir_build)/%.bin.o: $(dir_build)/%.bin
-	@$(bin2o)
-
-$(dir_build)/loader.bin: $(dir_loader) $(dir_build)
-	@$(MAKE) -C $<
-
-$(dir_build)/arm11.bin: $(dir_arm11) $(dir_build)
-	@$(MAKE) -C $<
 
 $(dir_build)/memory.o $(dir_build)/strings.o: CFLAGS += -O3
 $(dir_build)/installer.o: CFLAGS += -DTITLE="\"$(name) $(revision)\""

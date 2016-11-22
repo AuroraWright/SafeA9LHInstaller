@@ -91,7 +91,7 @@ typedef struct mmcdevice {
     u32 res;
 } mmcdevice;
 
-bool sdmmc_sdcard_init(bool isOtpless);
+bool sdmmc_sdcard_init(bool initSd, bool initNand);
 int sdmmc_sdcard_readsectors(u32 sector_no, u32 numsectors, u8 *out);
 int sdmmc_sdcard_writesectors(u32 sector_no, u32 numsectors, const u8 *in);
 int sdmmc_nand_readsectors(u32 sector_no, u32 numsectors, u8 *out);
