@@ -4,12 +4,7 @@ ifeq ($(strip $(DEVKITARM)),)
 $(error "Please set DEVKITARM in your environment. export DEVKITARM=<path to>devkitARM")
 endif
 
-include $(DEVKITARM)/3ds_rules
-
-CC := arm-none-eabi-gcc
-AS := arm-none-eabi-as
-LD := arm-none-eabi-ld
-OC := arm-none-eabi-objcopy
+include $(DEVKITARM)/base_tools
 
 name := SafeA9LHInstaller
 revision := $(shell git describe --tags --match v[0-9]* --abbrev=8 | sed 's/-[0-9]*-g/-/i')
@@ -69,7 +64,7 @@ $(dir_out)/$(name)$(revision).7z: all
 	@7z a -mx $@ ./$(@D)/*
 
 $(dir_build)/main.bin: $(dir_build)/main.elf
-	$(OC) -S -O binary $< $@
+	$(OBJCOPY) -S -O binary $< $@
 
 $(dir_build)/main.elf: $(objects)
 	$(LINK.o) -T linker.ld $(OUTPUT_OPTION) $^
