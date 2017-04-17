@@ -3,6 +3,7 @@
 
 **Usage / Features:**
 
+*DO NOT USE THIS VERSION TO INSTALL ON NEW 3DS UNLESS YOU HAVE AN HARDMOD, CAUSES RANDOM BRICKS! UNINSTALLATION IS FINE*  
 For a comprehensive guide to installing A9LH and to 3DS hacking in general, refer to [Plailect's guide](https://github.com/Plailect/Guide/wiki/Get-Started).  
 For other details about the program, refer to the [GBATemp thread](http://gbatemp.net/threads/safea9lhinstaller.419577/).
 

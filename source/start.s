@@ -77,15 +77,6 @@ start:
     mcr p15, 0, r8, c2, c0, 0   @ Data cacheable 0, 2, 4
     mcr p15, 0, r8, c2, c0, 1   @ Inst cacheable 0, 2, 4
 
-    @ Clear BSS
-    ldr r0, =__bss_start
-    ldr r1, =__bss_end
-    mov r2, #0
-    clear_bss_loop:
-        str r2, [r0], #4
-        cmp r0, r1
-        blo clear_bss_loop
-
     @ Enable caches / MPU / ITCM
     mrc p15, 0, r0, c1, c0, 0  @ read control register
     orr r0, r0, #(1<<18)       @ - ITCM enable
@@ -99,5 +90,12 @@ start:
     ldr r0, =0x10000020
     mov r1, #0x340
     str r1, [r0]
+
+    @ Clear BSS
+    ldr r0, =__bss_start
+    mov r1, #0
+    ldr r2, =__bss_end
+    sub r2, r0
+    bl memset32
 
     b main

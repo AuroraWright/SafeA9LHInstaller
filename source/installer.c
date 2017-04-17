@@ -32,14 +32,6 @@ static const u8 sectorHashRetail[SHA_256_HASH_SIZE] = {
     0xD8, 0x2D, 0xB7, 0xB4, 0x38, 0x2B, 0x07, 0x88, 0x99, 0x77, 0x91, 0x0C, 0xC6, 0xEC, 0x6D, 0x87,
     0x7D, 0x21, 0x79, 0x23, 0xD7, 0x60, 0xAF, 0x4E, 0x8B, 0x3A, 0xAB, 0xB2, 0x63, 0xE4, 0x21, 0xC6
 },
-                firm104O3DSHash[SHA_256_HASH_SIZE] = {
-    0x5D, 0x33, 0xD9, 0xCE, 0xE3, 0x39, 0x05, 0xD5, 0xCE, 0x37, 0xFE, 0xFB, 0xB5, 0xEC, 0x73, 0x6A,
-    0xA0, 0x10, 0xAD, 0x87, 0xF8, 0xDC, 0x55, 0x39, 0xFD, 0xDB, 0x48, 0x69, 0xAC, 0x5F, 0x3C, 0x2B
-},
-                firm104N3DSHash[SHA_256_HASH_SIZE] = {
-    0x2D, 0x6B, 0xCC, 0xCE, 0x3B, 0x81, 0xD7, 0xCA, 0x67, 0x17, 0x90, 0x33, 0x35, 0x4D, 0xFA, 0xA5,
-    0x70, 0xF4, 0x7A, 0x99, 0xBB, 0x60, 0x0C, 0x2F, 0x34, 0x90, 0xFF, 0x10, 0xD4, 0x4C, 0x97, 0x42
-},
                 sectorHashDev[SHA_256_HASH_SIZE] = {
     0xB2, 0x91, 0xD9, 0xB1, 0x33, 0x05, 0x79, 0x0D, 0x47, 0xC6, 0x06, 0x98, 0x4C, 0x67, 0xC3, 0x70, 
     0x09, 0x54, 0xE3, 0x85, 0xDE, 0x47, 0x55, 0xAF, 0xC6, 0xCB, 0x1D, 0x8D, 0xC7, 0x84, 0x5A, 0x64
@@ -334,32 +326,10 @@ static inline void uninstaller(void)
         case 1:
             shutdown(1, "Error: more than one FIRM has been detected");
             break;
-        case 5:
-            posY = drawString("FIRM 11.0/11.1/11.2 has been detected!", 10, posY + SPACING_Y, COLOR_RED);
-            posY = drawString("Press SELECT to load 10.4 FIRM from SD", 10, posY + SPACING_Y, COLOR_WHITE);
-            posY = drawString("Press any other button to load FIRM from CTRNAND", 10, posY, COLOR_RED);
-
-            if(waitInput() == BUTTON_SELECT)
-            {
-                u32 firm104Size = ISN3DS ? 0xF2000 : 0xEA000;
-
-                unmountCtrNand();
-
-                if(!mountFs(true)) shutdown(1, "Error: failed to mount the SD card");
-
-                if(fileRead((void *)FIRM0_OFFSET, "a9lh/firm104.bin", firm104Size) != firm104Size)
-                    shutdown(1, "Error: firm104.bin doesn't exist or has a wrong size");
-
-                if(!verifyHash((void *)FIRM0_OFFSET, firm104Size, ISN3DS ? firm104N3DSHash : firm104O3DSHash))
-                    shutdown(1, "Error: firm104.bin is invalid or corrupted");
-
-                firmSize = firm104Size;
-                break;
-            }
         case 2:
-            if(result == 2) posY = drawString("A FIRM newer than 11.2 has been detected!", 10, posY + SPACING_Y, COLOR_RED);
+            posY = drawString("A FIRM newer than 11.3 has been detected!", 10, posY + SPACING_Y, COLOR_RED);
             posY = drawString("You are about to uninstall A9LH!", 10, posY + SPACING_Y, COLOR_RED);
-            posY = drawString("To reinstall you'll need an hardmod or a DSi dg!", 10, posY, COLOR_RED);
+            posY = drawString("To reinstall you'll need hardmod + NAND backup!", 10, posY, COLOR_RED);
             break;
         case 3:
             shutdown(1, "Error: the CTRNAND FIRM is too large");
@@ -368,23 +338,16 @@ static inline void uninstaller(void)
             shutdown(1, "Error: couldn't read FIRM from CTRNAND");
             break;
         default:
+            posY = drawString("You are about to uninstall A9LH!", 10, posY + SPACING_Y, COLOR_RED);
+            posY = drawString("To reinstall you'll need 9.2 or lower!", 10, posY, COLOR_RED);
             break;
-    }
-
-    if(firmSize != 0 || !result)
-    {
-        posY = drawString("You are about to uninstall A9LH!", 10, posY + SPACING_Y, COLOR_RED);
-        posY = drawString("To reinstall you'll need 9.2 or lower!", 10, posY, COLOR_RED);
     }
 
     inputSequence();
 
     //Decrypt it and get its size
-    if(!firmSize)
-    {
-        firmSize = decryptExeFs((Cxi *)FIRM0_OFFSET);
-        if(firmSize == 0) shutdown(1, "Error: couldn't decrypt the CTRNAND FIRM");
-    }
+    firmSize = decryptExeFs((Cxi *)FIRM0_OFFSET);
+    if(firmSize == 0) shutdown(1, "Error: couldn't decrypt the CTRNAND FIRM");
 
     //writeFirm encrypts in-place, so we need two copies
     memcpy((void *)FIRM1_OFFSET, (void *)FIRM0_OFFSET, firmSize);

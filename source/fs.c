@@ -32,11 +32,6 @@ bool mountFs(bool isSd)
     return isSd ? f_mount(&fs, "0:", 1) == FR_OK : f_mount(&fs, "1:", 1) == FR_OK;
 }
 
-void unmountCtrNand(void)
-{
-    f_mount(NULL, "1:", 1);
-}
-
 u32 fileRead(void *dest, const char *path, u32 maxSize)
 {
     FIL file;
@@ -120,8 +115,8 @@ u32 firmRead(void *dest)
 
         u32 tempVersion = hexAtoi(info.altname, 8);
 
-        //FIRM is equal or newer than 11.0
-        if(!ISDEVUNIT && tempVersion >= (ISN3DS ? 0x21 : 0x52)) ret = tempVersion <= (ISN3DS ? 0x28 : 0x58) ? 5 : 2;
+        //FIRM is newer than 11.3
+        if(!ISDEVUNIT && tempVersion > (ISN3DS ? 0x2D : 0x5C)) ret = 2;
 
         //Found an older cxi
         if(tempVersion < firmVersion) firmVersion = tempVersion;

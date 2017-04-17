@@ -25,7 +25,6 @@
 #include "types.h"
 
 bool mountFs(bool isSd);
-void unmountCtrNand(void);
 u32 fileRead(void *dest, const char *path, u32 maxSize);
 bool fileWrite(const void *buffer, const char *path, u32 size);
 void fileDelete(const char *path);
